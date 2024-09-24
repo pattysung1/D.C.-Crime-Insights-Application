@@ -5,6 +5,8 @@ import TotalsComponent from '../components/TotalsComponent';
 import CrimeMapComponent from '../components/CrimeMapComponent';
 import SummaryComponent from '../components/SummaryComponent';
 import FilterComponent from '../components/FilterComponent';
+import ChartComponent from '../components/ChartComponent';
+import ChatBotComponent from '../components/ChatBotComponent';
 import '../styles/HomePage.css';  // CSS
 
 const HomePage = () => {
@@ -34,8 +36,25 @@ const HomePage = () => {
         <div className="summary-section">
           <SummaryComponent />
         </div>
+        <div className="chart-section">
+          <ChartComponent />
+        </div>
+        <div className="chart-section">
+          <ChartComponent />
+        </div>
+        <div className="chatbot-section">
+        <ChatBotComponent />
+        </div>
       </div>
-    </div>
+        
+        
+      </div>
+
+      
+
+
+
+    
   );
 };
 

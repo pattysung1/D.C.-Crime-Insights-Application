@@ -6,37 +6,41 @@
     flex-direction: column;
     padding: 20px;
     align-items: center;
-    /* 讓所有子元素水平居中 */
+    /* Center all child elements horizontally */
 }
 
 /* Styles for the Filter Component */
 .filter-section {
     margin-bottom: 20px;
     width: 100%;
-    /* 根據需要設置寬度 */
+    /* Set width as needed */
     max-width: 800px;
-    /* 限制最大寬度 */
+    /* Limit the maximum width */
     display: flex;
     justify-content: center;
-    /* 讓內容在內部居中 */
+    /* Center the content inside */
 }
 
-/* Container for the main content, including Totals, Crime Map, and Summary */
+/* Container for the main content, including Totals, Crime Map, Summary, and Chart */
 .content-container {
     display: flex;
+    flex-wrap: wrap; /* Allow items to wrap onto the next line */
     justify-content: space-between;
+    gap: 20px; /* Optional: Add gap between items for better spacing */
 }
 
 /* Adjust styles for each section */
 .totals-section,
 .map-section,
-.summary-section {
+.summary-section,
+.chart-section {
     background-color: #fff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-right: 20px;
-    /* Spacing between sections */
+    flex: 1 1 calc(33.33% - 20px); /* Make each section take up one-third of the row, with spacing */
+    box-sizing: border-box; /* Ensure padding is included in the width calculation */
+    min-width: 300px; /* Optional: Set a minimum width for each section */
 }
 
 .totals-section {
@@ -47,7 +51,7 @@
 .map-section {
     width: 45%;
     /* Middle map section takes up 45% width */
-    height: 500px;
+    height: auto;
     /* Fixed height for the map */
 }
 
@@ -57,6 +61,6 @@
 }
 
 /* Ensure the map height fills the section */
-.map-section>div {
+.map-section > div {
     height: 100%;
 }
