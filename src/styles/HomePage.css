@@ -5,21 +5,36 @@
     display: flex;
     flex-direction: column;
     padding: 20px;
-    align-items: center;
-    /* 讓所有子元素水平居中 */
 }
 
-/* Styles for the Filter Component */
-.filter-section {
+/* 將篩選部分的容器設置為水平排列 */
+.header-container-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /* 讓內容在垂直方向上居中 */
     margin-bottom: 20px;
-    width: 100%;
-    /* 根據需要設置寬度 */
-    max-width: 800px;
-    /* 限制最大寬度 */
+    gap: 20px;
+    /* 控制三個部分之間的距離 */
+}
+
+.header-container-section h2 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+/* 各個篩選部分的樣式 */
+.date-filter-section,
+.crime-type-section,
+.crime-zone-section {
+    flex: 1;
+    /* 讓每個部分平分剩餘空間 */
     display: flex;
     justify-content: center;
-    /* 讓內容在內部居中 */
+    /* 讓內容在每個部分內居中 */
 }
+
 
 /* Container for the main content, including Totals, Crime Map, and Summary */
 .content-container {
@@ -28,6 +43,7 @@
 }
 
 /* Adjust styles for each section */
+.header-container-section,
 .totals-section,
 .map-section,
 .summary-section {

@@ -4,7 +4,7 @@ import { DatePicker, Button } from 'antd';
 
 const { RangePicker } = DatePicker;
 
-const FilterComponent = ({ onFilterChange }) => {
+const DateFilterComponent = ({ onFilterChange }) => {
   const [dates, setDates] = useState(null);
 
   const handleFilter = () => {
@@ -16,13 +16,13 @@ const FilterComponent = ({ onFilterChange }) => {
 
   return (
     <div style={{ marginBottom: '20px' }}>
-      <h2>Data Filter</h2>
+      <h2>Date Filter</h2>
       <RangePicker onChange={(dates) => setDates(dates)} />
       <Button type="primary" onClick={handleFilter} style={{ marginLeft: '10px' }}>
-        Filter
+        Search
       </Button>
     </div>
   );
 };
 
-export default FilterComponent;
+export default DateFilterComponent;

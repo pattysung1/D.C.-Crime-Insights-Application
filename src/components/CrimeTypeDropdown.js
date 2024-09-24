@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../styles/Dropdown.css'; // 新增的 CSS 文件
 
 const CrimeTypeDropdown = ({ onCrimeTypeChange }) => {
     const [selectedCrimeType, setSelectedCrimeType] = useState('');
@@ -10,6 +11,7 @@ const CrimeTypeDropdown = ({ onCrimeTypeChange }) => {
         'Theft',
         'Vandalism',
         'Drugs',
+        // 根據實際需求新增其他犯罪類型
     ];
 
     const handleCrimeTypeChange = (e) => {
@@ -19,8 +21,8 @@ const CrimeTypeDropdown = ({ onCrimeTypeChange }) => {
     };
 
     return (
-        <div className="crime-type-dropdown">
-            <label htmlFor="crime-type">Crime Type:</label>
+        <div className="dropdown">
+            <h2>Crime Type</h2>
             <select id="crime-type" value={selectedCrimeType} onChange={handleCrimeTypeChange}>
                 {crimeTypes.map((type) => (
                     <option key={type} value={type}>
