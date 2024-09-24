@@ -37,36 +37,4 @@
   }
 }
 
-/* 在 App.css 或任意樣式文件中設置佈局 */
-.dashboard-container {
-  display: flex;
-  justify-content: space-between;
-  padding: 20px;
-}
-
-.totals-section,
-.map-section,
-.summary-section {
-  background-color: #f9f9f9; /* 背景色 */
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); /* 輕微陰影效果 */
-}
-
-.totals-section {
-  width: 25%; /* 左側佔 25% */
-}
-
-.map-section {
-  width: 45%; /* 中間地圖佔 45% */
-}
-
-.summary-section {
-  width: 25%; /* 右側佔 25% */
-}
-
-/* 確保地圖和其他內容的高度保持一致 */
-.map-section {
-  height: 500px; /* 可以根據需要調整 */
-}
 
