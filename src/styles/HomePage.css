@@ -1,0 +1,48 @@
+/* HomePage.css */
+
+/* Main container of the page */
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+  
+/* Styles for the Filter Component */
+.filter-section {
+    margin-bottom: 20px;
+}
+  
+/* Container for the main content, including Totals, Crime Map, and Summary */
+.content-container {
+    display: flex;
+    justify-content: space-between;
+}
+  
+/* Adjust styles for each section */
+.totals-section,
+.map-section,
+.summary-section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-right: 20px; /* Spacing between sections */
+}
+  
+.totals-section {
+    width: 25%; /* Left section takes up 25% width */
+}
+  
+.map-section {
+    width: 45%; /* Middle map section takes up 45% width */
+    height: 500px; /* Fixed height for the map */
+}
+  
+.summary-section {
+    width: 25%; /* Right section takes up 25% width */
+}
+  
+/* Ensure the map height fills the section */
+.map-section > div {
+    height: 100%;
+}
