@@ -5,21 +5,28 @@
     display: flex;
     flex-direction: column;
     padding: 20px;
+}
+
+/* 將篩選部分的容器設置為水平排列 */
+.header-container-section {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    /* Center all child elements horizontally */
+    /* 讓所有子元素水平居中 */
 }
 
 /* Styles for the Filter Component */
 .filter-section {
     margin-bottom: 20px;
     width: 100%;
-    /* Set width as needed */
+    /* 根據需要設置寬度 */
     max-width: 800px;
-    /* Limit the maximum width */
+    /* 限制最大寬度 */
     display: flex;
     justify-content: center;
-    /* Center the content inside */
+    /* 讓內容在內部居中 */
 }
+
 
 /* Container for the main content, including Totals, Crime Map, Summary, and Chart */
 .content-container {
@@ -30,6 +37,7 @@
 }
 
 /* Adjust styles for each section */
+.header-container-section,
 .totals-section,
 .map-section,
 .summary-section,

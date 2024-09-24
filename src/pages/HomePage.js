@@ -1,40 +1,54 @@
-// HomePage.js
 import React, { useState } from 'react';
 import GoogleMapComponent from '../components/GoogleMapComponent';
 import TotalsComponent from '../components/TotalsComponent';
 import CrimeMapComponent from '../components/CrimeMapComponent';
 import SummaryComponent from '../components/SummaryComponent';
 import FilterComponent from '../components/FilterComponent';
-import ChartComponent from '../components/ChartComponent';
-import ChatBotComponent from '../components/ChatBotComponent';
 import '../styles/HomePage.css';  // CSS
 
 const HomePage = () => {
   const [crimeStats, setCrimeStats] = useState([]);
+  const [filters, setFilters] = useState({ crimeType: 'All Crimes', dates: [null, null] });
 
-  const handleFilterChange = (dates) => {
-    console.log('篩選日期:', dates);
-    // TODO: API from backend
-    // axios.get('/api/crime-stats', { params: { startDate: dates[0], endDate: dates[1] } });
+  const handleFilterChange = (newFilters) => {
+    setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
+  };
+
+  const handleCrimeTypeChange = (crimeType) => {
+    setFilters((prevFilters) => ({ ...prevFilters, crimeType }));;
+  };
+
+  const handleZoneChange = (zone) => {
+    setFilters((prevFilters) => ({ ...prevFilters, crimeZone: zone }));
   };
 
   return (
     <div className="dashboard-container">
-      {/* Filter component at top */}
-      <div className="filter-section">
-        <FilterComponent />
+      {/* 將三個篩選部分放入 filter-container */}
+      <div className="header-container-section">
+        <div className="date-filter-section">
+          <DateFilterComponent onFilterChange={handleFilterChange} />
+        </div>
+
+        <div className="crime-type-section">
+          <CrimeTypeDropdown onCrimeTypeChange={handleCrimeTypeChange} />
+        </div>
+
+        <div className="crime-zone-section">
+          <CrimeZoneDropdown onZoneChange={handleZoneChange} />
+        </div>
       </div>
-      
+
       {/* components */}
       <div className="content-container">
         <div className="totals-section">
-          <TotalsComponent />
+          <TotalsComponent crimeType={filters.crimeType} />
         </div>
         <div className="map-section">
-          <CrimeMapComponent />
+          <CrimeMapComponent crimeType={filters.crimeType} />
         </div>
         <div className="summary-section">
-          <SummaryComponent />
+          <SummaryComponent crimeType={filters.crimeType} />
         </div>
         <div className="chart-section">
           <ChartComponent />
