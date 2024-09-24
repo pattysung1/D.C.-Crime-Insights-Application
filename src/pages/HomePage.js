@@ -3,13 +3,28 @@ import GoogleMapComponent from '../components/GoogleMapComponent';
 import TotalsComponent from '../components/TotalsComponent';
 import CrimeMapComponent from '../components/CrimeMapComponent';
 import SummaryComponent from '../components/SummaryComponent';
-import FilterComponent from '../components/FilterComponent';
+import DateFilterComponent from '../components/DateFilterComponent';
+import CrimeTypeDropdown from '../components/CrimeTypeDropdown'; // 引入犯罪類型篩選組件
+import CrimeZoneDropdown from '../components/CrimeZoneDropdown'; // 引入犯罪區域篩選組件
+import ChartComponent from '../components/ChartComponent';
+import ChatBotComponent from '../components/ChatBotComponent';
 import '../styles/HomePage.css';  // CSS
 
 const HomePage = () => {
   const [crimeStats, setCrimeStats] = useState([]);
   const [filters, setFilters] = useState({ crimeType: 'All Crimes', dates: [null, null] });
+  const [filters, setFilters] = useState({ crimeType: 'All Crimes', dates: [null, null] });
 
+  const handleFilterChange = (newFilters) => {
+    setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
+  };
+
+  const handleCrimeTypeChange = (crimeType) => {
+    setFilters((prevFilters) => ({ ...prevFilters, crimeType }));;
+  };
+
+  const handleZoneChange = (zone) => {
+    setFilters((prevFilters) => ({ ...prevFilters, crimeZone: zone }));
   const handleFilterChange = (newFilters) => {
     setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
   };
@@ -37,17 +52,34 @@ const HomePage = () => {
         <div className="crime-zone-section">
           <CrimeZoneDropdown onZoneChange={handleZoneChange} />
         </div>
+      {/* 將三個篩選部分放入 filter-container */}
+      <div className="header-container-section">
+        <div className="date-filter-section">
+          <DateFilterComponent onFilterChange={handleFilterChange} />
+        </div>
+
+        <div className="crime-type-section">
+          <CrimeTypeDropdown onCrimeTypeChange={handleCrimeTypeChange} />
+        </div>
+
+        <div className="crime-zone-section">
+          <CrimeZoneDropdown onZoneChange={handleZoneChange} />
+        </div>
       </div>
+
 
       {/* components */}
       <div className="content-container">
         <div className="totals-section">
           <TotalsComponent crimeType={filters.crimeType} />
+          <TotalsComponent crimeType={filters.crimeType} />
         </div>
         <div className="map-section">
           <CrimeMapComponent crimeType={filters.crimeType} />
+          <CrimeMapComponent crimeType={filters.crimeType} />
         </div>
         <div className="summary-section">
+          <SummaryComponent crimeType={filters.crimeType} />
           <SummaryComponent crimeType={filters.crimeType} />
         </div>
         <div className="chart-section">
