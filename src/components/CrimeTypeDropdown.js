@@ -10,7 +10,6 @@ const CrimeTypeDropdown = ({ onCrimeTypeChange }) => {
         'Theft',
         'Vandalism',
         'Drugs',
-        // 根據實際需求新增其他犯罪類型
     ];
 
     const handleCrimeTypeChange = (e) => {
