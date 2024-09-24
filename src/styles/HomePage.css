@@ -12,7 +12,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    /* 讓所有子元素水平居中 */
+    /* 讓內容在垂直方向上居中 */
+    margin-bottom: 20px;
+    gap: 20px;
+    /* 控制三個部分之間的距離 */
 }
 
 /* Styles for the Filter Component */

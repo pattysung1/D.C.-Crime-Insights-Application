@@ -11,26 +11,14 @@ import ChatBotComponent from '../components/ChatBotComponent';
 import '../styles/HomePage.css';  // CSS
 
 const HomePage = () => {
-  const [crimeStats, setCrimeStats] = useState([]);
-  const [filters, setFilters] = useState({ crimeType: 'All Crimes', dates: [null, null] });
-  const [filters, setFilters] = useState({ crimeType: 'All Crimes', dates: [null, null] });
+  const [filters, setFilters] = useState({ crimeType: 'All Crimes', dates: [null, null], crimeZone: 'All Zones' });
 
   const handleFilterChange = (newFilters) => {
     setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
   };
 
   const handleCrimeTypeChange = (crimeType) => {
-    setFilters((prevFilters) => ({ ...prevFilters, crimeType }));;
-  };
-
-  const handleZoneChange = (zone) => {
-    setFilters((prevFilters) => ({ ...prevFilters, crimeZone: zone }));
-  const handleFilterChange = (newFilters) => {
-    setFilters((prevFilters) => ({ ...prevFilters, ...newFilters }));
-  };
-
-  const handleCrimeTypeChange = (crimeType) => {
-    setFilters((prevFilters) => ({ ...prevFilters, crimeType }));;
+    setFilters((prevFilters) => ({ ...prevFilters, crimeType }));
   };
 
   const handleZoneChange = (zone) => {
@@ -39,68 +27,38 @@ const HomePage = () => {
 
   return (
     <div className="dashboard-container">
-      {/* 將三個篩選部分放入 filter-container */}
+      {/* 篩選部分 */}
       <div className="header-container-section">
         <div className="date-filter-section">
           <DateFilterComponent onFilterChange={handleFilterChange} />
         </div>
-
         <div className="crime-type-section">
           <CrimeTypeDropdown onCrimeTypeChange={handleCrimeTypeChange} />
         </div>
-
-        <div className="crime-zone-section">
-          <CrimeZoneDropdown onZoneChange={handleZoneChange} />
-        </div>
-      {/* 將三個篩選部分放入 filter-container */}
-      <div className="header-container-section">
-        <div className="date-filter-section">
-          <DateFilterComponent onFilterChange={handleFilterChange} />
-        </div>
-
-        <div className="crime-type-section">
-          <CrimeTypeDropdown onCrimeTypeChange={handleCrimeTypeChange} />
-        </div>
-
         <div className="crime-zone-section">
           <CrimeZoneDropdown onZoneChange={handleZoneChange} />
         </div>
       </div>
 
-
-      {/* components */}
+      {/* 內容部分 */}
       <div className="content-container">
         <div className="totals-section">
-          <TotalsComponent crimeType={filters.crimeType} />
-          <TotalsComponent crimeType={filters.crimeType} />
+          <TotalsComponent crimeType={filters.crimeType} crimeZone={filters.crimeZone} />
         </div>
         <div className="map-section">
-          <CrimeMapComponent crimeType={filters.crimeType} />
-          <CrimeMapComponent crimeType={filters.crimeType} />
+          <CrimeMapComponent crimeType={filters.crimeType} crimeZone={filters.crimeZone} />
         </div>
         <div className="summary-section">
-          <SummaryComponent crimeType={filters.crimeType} />
-          <SummaryComponent crimeType={filters.crimeType} />
+          <SummaryComponent crimeType={filters.crimeType} crimeZone={filters.crimeZone} />
         </div>
         <div className="chart-section">
-          <ChartComponent />
-        </div>
-        <div className="chart-section">
-          <ChartComponent />
+          <ChartComponent crimeType={filters.crimeType} crimeZone={filters.crimeZone} />
         </div>
         <div className="chatbot-section">
-        <ChatBotComponent />
+          <ChatBotComponent />
         </div>
       </div>
-        
-        
-      </div>
-
-      
-
-
-
-    
+    </div>
   );
 };
 
