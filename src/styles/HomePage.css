@@ -7,6 +7,41 @@
     padding: 20px;
 }
 
+.header {
+    display: flex;
+    justify-content: space-between;
+    /* 左中右均勻分布 */
+    align-items: center;
+    /* 垂直居中 */
+    padding: 10px;
+    /* 添加一些內邊距 */
+}
+
+.logo {
+    width: auto;
+    /* 保持圖片的寬高比自動調整 */
+    object-fit: contain;
+    /* 確保圖片不會變形 */
+}
+
+/* 左右 logo 的額外樣式 */
+.left-logo {
+    height: 100px;
+    width: 100px;
+    /* 確保寬度和高度相等 */
+    border-radius: 50%;
+    /* 將圖片變成圓形 */
+    object-fit: cover;
+    /* 確保圖片填滿圓形區域，不會變形 */
+    margin-right: auto;
+}
+
+.right-logo {
+    height: 40px;
+    /* 調整這個值來縮小圖片的高度 */
+    margin-left: auto;
+}
+
 /* 將篩選部分的容器設置為水平排列 */
 .header-container-section {
     display: flex;
@@ -34,9 +69,11 @@
 /* Container for the main content, including Totals, Crime Map, Summary, and Chart */
 .content-container {
     display: flex;
-    flex-wrap: wrap; /* Allow items to wrap onto the next line */
+    flex-wrap: wrap;
+    /* Allow items to wrap onto the next line */
     justify-content: space-between;
-    gap: 20px; /* Optional: Add gap between items for better spacing */
+    gap: 20px;
+    /* Optional: Add gap between items for better spacing */
 }
 
 /* Adjust styles for each section */
@@ -49,9 +86,12 @@
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    flex: 1 1 calc(33.33% - 20px); /* Make each section take up one-third of the row, with spacing */
-    box-sizing: border-box; /* Ensure padding is included in the width calculation */
-    min-width: 300px; /* Optional: Set a minimum width for each section */
+    flex: 1 1 calc(33.33% - 20px);
+    /* Make each section take up one-third of the row, with spacing */
+    box-sizing: border-box;
+    /* Ensure padding is included in the width calculation */
+    min-width: 300px;
+    /* Optional: Set a minimum width for each section */
 }
 
 .totals-section {
@@ -72,6 +112,6 @@
 }
 
 /* Ensure the map height fills the section */
-.map-section > div {
+.map-section>div {
     height: 100%;
 }

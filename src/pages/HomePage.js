@@ -27,6 +27,12 @@ const HomePage = () => {
 
   return (
     <div className="dashboard-container">
+      <header className="header">
+        <img src="/photo/dc.png" alt="Left Logo" className="logo left-logo" />
+        <h1 className="project-title">District of Columbia Crime Monitor</h1>
+        <img src="/photo/vt.png" alt="Right Logo" className="logo right-logo" />
+      </header>
+
       {/* 篩選部分 */}
       <div className="header-container-section">
         <div className="date-filter-section">
