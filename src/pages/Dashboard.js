@@ -7,7 +7,6 @@ import DateFilterComponent from '../components/DateFilterComponent';
 import CrimeTypeDropdown from '../components/CrimeTypeDropdown';
 import CrimeZoneDropdown from '../components/CrimeZoneDropdown';
 import ChartComponent from '../components/ChartComponent';
-import ChatBotComponent from '../components/ChatBotComponent';
 
 const Dashboard = ({ filters, handleFilterChange, handleCrimeTypeChange, handleZoneChange }) => {
     return (
@@ -37,9 +36,7 @@ const Dashboard = ({ filters, handleFilterChange, handleCrimeTypeChange, handleZ
                 <div className="chart-section">
                     <ChartComponent crimeType={filters.crimeType} crimeZone={filters.crimeZone} />
                 </div>
-                <div className="chatbot-section">
-                    <ChatBotComponent />
-                </div>
+
             </div>
         </>
     );

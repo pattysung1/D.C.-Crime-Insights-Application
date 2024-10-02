@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
 import Dashboard from '../pages/Dashboard';
+import CrimeMap from './CrimeMap';
 import Reports from '../pages/Reports';
 import Settings from '../pages/Settings';
+import CrimePrediction from './CrimePrediction';
+import PublicSafety from './PublicSafety';
 import Sidebar from '../components/Sidebar'; // 引入 Sidebar 組件
+import ChatBotComponent from '../components/ChatBotComponent';
+
 import '../styles/HomePage.css'; // CSS
 
 const HomePage = () => {
@@ -42,8 +47,14 @@ const HomePage = () => {
               handleZoneChange={handleZoneChange}
             />
           )}
+          {activeTab === 'CrimeMap' && <CrimeMap />}
           {activeTab === 'reports' && <Reports />}
+          {activeTab === 'CrimePrediction' && <CrimePrediction />}
+          {activeTab === 'PublicSafety' && <PublicSafety />}
           {activeTab === 'settings' && <Settings />}
+        </div>
+        <div className="chatbot-section">
+          <ChatBotComponent />
         </div>
       </div>
     </div>
