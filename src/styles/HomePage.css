@@ -1,7 +1,7 @@
 /* HomePage.css */
 
 /* Main container of the page */
-.dashboard-container {
+.page-container {
     display: flex;
     flex-direction: column;
     padding: 20px;
@@ -114,4 +114,53 @@
 /* Ensure the map height fills the section */
 .map-section>div {
     height: 100%;
+}
+
+/* Main Container 包含左側頁籤和右側內容 */
+.main-container {
+    display: flex;
+    flex: 1;
+    height: calc(100vh - 60px);
+    /* 減去 header 的高度 */
+}
+
+/* 左側的 sidebar */
+.sidebar {
+    width: 200px;
+    background-color: #2c3e50;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    color: white;
+}
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar li {
+    padding: 10px;
+    margin: 10px 0;
+    cursor: pointer;
+    background-color: #34495e;
+    border-radius: 8px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.sidebar li:hover {
+    background-color: #1abc9c;
+}
+
+.sidebar li.active {
+    background-color: #16a085;
+}
+
+/* 右側內容區域 */
+.content {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
 }
