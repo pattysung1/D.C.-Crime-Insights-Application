@@ -1,0 +1,35 @@
+/* src/styles/Header.css */
+
+/* Header 部分 */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: #2c3e50; /* 背景色 */
+    color: white; /* 字體顏色 */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000; /* 保證在最上層 */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.logo {
+    width: auto;
+    object-fit: contain;
+}
+
+.left-logo {
+    height: 100px;
+    width: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: auto;
+}
+
+.right-logo {
+    height: 40px;
+    margin-left: auto;
+}

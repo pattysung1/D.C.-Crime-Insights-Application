@@ -1,84 +1,96 @@
 /* HomePage.css */
 
-/* Main container of the page */
-.page-container {
+/* 主頁面容器，包括側邊欄和主內容 */
+.homepage-container {
+    display: flex;
+    height: 100vh;
+}
+
+/* 側邊欄樣式 */
+.sidebar {
+    width: 250px;
+    background-color: #2c3e50;
+    color: white;
     display: flex;
     flex-direction: column;
     padding: 20px;
+    position: fixed;
+    height: 100%;
 }
 
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar ul li {
+    margin: 20px 0;
+}
+
+.sidebar ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+    transition: color 0.3s;
+}
+
+.sidebar ul li a:hover {
+    color: #1abc9c;
+}
+
+/* 主內容區域 */
+.main-content {
+    margin-left: 250px;
+    padding: 20px;
+    flex: 1;
+    background-color: #f5f5f5;
+    overflow-y: auto;
+}
+
+/* Header 部分 */
 .header {
     display: flex;
     justify-content: space-between;
-    /* 左中右均勻分布 */
     align-items: center;
-    /* 垂直居中 */
     padding: 10px;
-    /* 添加一些內邊距 */
 }
 
 .logo {
     width: auto;
-    /* 保持圖片的寬高比自動調整 */
     object-fit: contain;
-    /* 確保圖片不會變形 */
 }
 
-/* 左右 logo 的額外樣式 */
 .left-logo {
     height: 100px;
     width: 100px;
-    /* 確保寬度和高度相等 */
     border-radius: 50%;
-    /* 將圖片變成圓形 */
     object-fit: cover;
-    /* 確保圖片填滿圓形區域，不會變形 */
     margin-right: auto;
 }
 
 .right-logo {
     height: 40px;
-    /* 調整這個值來縮小圖片的高度 */
     margin-left: auto;
 }
 
-/* 將篩選部分的容器設置為水平排列 */
+/* 篩選部分 */
 .header-container-section {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    /* 讓內容在垂直方向上居中 */
     margin-bottom: 20px;
     gap: 20px;
-    /* 控制三個部分之間的距離 */
 }
 
-/* Styles for the Filter Component */
-.filter-section {
-    margin-bottom: 20px;
-    width: 100%;
-    /* 根據需要設置寬度 */
-    max-width: 800px;
-    /* 限制最大寬度 */
-    display: flex;
-    justify-content: center;
-    /* 讓內容在內部居中 */
-}
-
-
-/* Container for the main content, including Totals, Crime Map, Summary, and Chart */
+/* 內容部分樣式 */
 .content-container {
     display: flex;
     flex-wrap: wrap;
-    /* Allow items to wrap onto the next line */
     justify-content: space-between;
     gap: 20px;
-    /* Optional: Add gap between items for better spacing */
 }
 
-/* Adjust styles for each section */
 .header-container-section,
-.totals-section,
 .map-section,
 .summary-section,
 .chart-section {
@@ -87,80 +99,16 @@
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     flex: 1 1 calc(33.33% - 20px);
-    /* Make each section take up one-third of the row, with spacing */
     box-sizing: border-box;
-    /* Ensure padding is included in the width calculation */
     min-width: 300px;
-    /* Optional: Set a minimum width for each section */
 }
 
-.totals-section {
-    width: 25%;
-    /* Left section takes up 25% width */
-}
 
 .map-section {
     width: 45%;
-    /* Middle map section takes up 45% width */
     height: auto;
-    /* Fixed height for the map */
 }
 
 .summary-section {
     width: 25%;
-    /* Right section takes up 25% width */
-}
-
-/* Ensure the map height fills the section */
-.map-section>div {
-    height: 100%;
-}
-
-/* Main Container 包含左側頁籤和右側內容 */
-.main-container {
-    display: flex;
-    flex: 1;
-    height: calc(100vh - 60px);
-    /* 減去 header 的高度 */
-}
-
-/* 左側的 sidebar */
-.sidebar {
-    width: 200px;
-    background-color: #2c3e50;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    color: white;
-}
-
-.sidebar ul {
-    list-style-type: none;
-    padding: 0;
-}
-
-.sidebar li {
-    padding: 10px;
-    margin: 10px 0;
-    cursor: pointer;
-    background-color: #34495e;
-    border-radius: 8px;
-    text-align: center;
-    transition: background-color 0.3s ease;
-}
-
-.sidebar li:hover {
-    background-color: #1abc9c;
-}
-
-.sidebar li.active {
-    background-color: #16a085;
-}
-
-/* 右側內容區域 */
-.content {
-    flex: 1;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
 }

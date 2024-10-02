@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import Dashboard from '../pages/Dashboard';
-import CrimeMap from './CrimeMap';
+import CrimeMap from '../pages/CrimeMap'; // 確保這裡的路徑是正確的
 import Reports from '../pages/Reports';
 import Settings from '../pages/Settings';
-import CrimePrediction from './CrimePrediction';
-import PublicSafety from './PublicSafety';
+import CrimePrediction from '../pages/CrimePrediction';
+import PublicSafety from '../pages/PublicSafety';
 import Sidebar from '../components/Sidebar'; // 引入 Sidebar 組件
 import ChatBotComponent from '../components/ChatBotComponent';
 
@@ -39,6 +39,7 @@ const HomePage = () => {
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
         <div className="main-content">
+          {/* 渲染不同的頁籤內容 */}
           {activeTab === 'dashboard' && (
             <Dashboard
               filters={filters}
@@ -47,11 +48,26 @@ const HomePage = () => {
               handleZoneChange={handleZoneChange}
             />
           )}
-          {activeTab === 'CrimeMap' && <CrimeMap />}
-          {activeTab === 'reports' && <Reports />}
-          {activeTab === 'CrimePrediction' && <CrimePrediction />}
-          {activeTab === 'PublicSafety' && <PublicSafety />}
-          {activeTab === 'settings' && <Settings />}
+          {activeTab === 'CrimeMap' && (
+            <CrimeMap
+              filters={filters}
+              handleFilterChange={handleFilterChange}
+              handleCrimeTypeChange={handleCrimeTypeChange}
+              handleZoneChange={handleZoneChange}
+            />
+          )}
+          {activeTab === 'reports' && (
+            <Reports filters={filters} />
+          )}
+          {activeTab === 'CrimePrediction' && (
+            <CrimePrediction filters={filters} />
+          )}
+          {activeTab === 'PublicSafety' && (
+            <PublicSafety />
+          )}
+          {activeTab === 'settings' && (
+            <Settings />
+          )}
         </div>
         <div className="chatbot-section">
           <ChatBotComponent />

@@ -74,3 +74,36 @@
     border-radius: 8px;
     padding: 10px;
 }
+
+/* 左側的 sidebar */
+
+.sidebar ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.sidebar li {
+    padding: 10px;
+    margin: 10px 0;
+    cursor: pointer;
+    background-color: #34495e;
+    border-radius: 8px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+.sidebar li:hover {
+    background-color: #1abc9c;
+}
+
+.sidebar li.active {
+    background-color: #16a085;
+}
+
+/* 右側內容區域 */
+.content {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
