@@ -1,0 +1,18 @@
+.crime-trends-chart-container {
+    width: 100%;
+    max-width: 800px;
+    /* 設置圖表的最大寬度 */
+    height: 400px;
+    /* 固定高度 */
+    margin: 0 auto;
+    /* 圖表在容器內居中 */
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.recharts-wrapper {
+    width: 100% !important;
+    height: 100% !important;
+}
