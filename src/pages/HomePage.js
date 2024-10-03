@@ -7,6 +7,7 @@ import CrimePrediction from '../pages/CrimePrediction';
 import PublicSafety from '../pages/PublicSafety';
 import Sidebar from '../components/Sidebar'; // 引入 Sidebar 組件
 import ChatBotComponent from '../components/ChatBotComponent';
+import Header from '../components/Header'; // 引入 Header 組件
 
 import '../styles/HomePage.css'; // CSS
 
@@ -28,11 +29,8 @@ const HomePage = () => {
 
   return (
     <div className="page-container">
-      <header className="header">
-        <img src="/photo/dc.png" alt="Left Logo" className="logo left-logo" />
-        <h1 className="project-title">District of Columbia Crime Monitor</h1>
-        <img src="/photo/vt.png" alt="Right Logo" className="logo right-logo" />
-      </header>
+      {/* 固定在最上方的 Header */}
+      <Header />
 
       <div className="main-container">
         {/* 左側頁籤欄位使用 Sidebar 組件 */}
@@ -56,18 +54,10 @@ const HomePage = () => {
               handleZoneChange={handleZoneChange}
             />
           )}
-          {activeTab === 'reports' && (
-            <Reports filters={filters} />
-          )}
-          {activeTab === 'CrimePrediction' && (
-            <CrimePrediction filters={filters} />
-          )}
-          {activeTab === 'PublicSafety' && (
-            <PublicSafety />
-          )}
-          {activeTab === 'settings' && (
-            <Settings />
-          )}
+          {activeTab === 'reports' && <Reports filters={filters} />}
+          {activeTab === 'CrimePrediction' && <CrimePrediction filters={filters} />}
+          {activeTab === 'PublicSafety' && <PublicSafety />}
+          {activeTab === 'settings' && <Settings />}
         </div>
         <div className="chatbot-section">
           <ChatBotComponent />

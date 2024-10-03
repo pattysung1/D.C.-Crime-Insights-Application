@@ -1,9 +1,14 @@
-/* HomePage.css */
-
 /* 主頁面容器，包括側邊欄和主內容 */
-.homepage-container {
+.page-container {
     display: flex;
+    flex-direction: column;
     height: 100vh;
+}
+
+.main-container {
+    display: flex;
+    margin-top: 120px; /* 確保主內容不會被固定的 Header 遮住 */
+    height: calc(100vh - 120px); /* 減去 Header 的高度 */
 }
 
 /* 側邊欄樣式 */
@@ -16,99 +21,13 @@
     padding: 20px;
     position: fixed;
     height: 100%;
+    top: 120px; /* 確保在 Header 下方 */
 }
 
-.sidebar ul {
-    list-style-type: none;
-    padding: 0;
-}
-
-.sidebar ul li {
-    margin: 20px 0;
-}
-
-.sidebar ul li a {
-    color: white;
-    text-decoration: none;
-    font-size: 18px;
-    transition: color 0.3s;
-}
-
-.sidebar ul li a:hover {
-    color: #1abc9c;
-}
-
-/* 主內容區域 */
 .main-content {
     margin-left: 250px;
     padding: 20px;
     flex: 1;
     background-color: #f5f5f5;
     overflow-y: auto;
-}
-
-/* Header 部分 */
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-}
-
-.logo {
-    width: auto;
-    object-fit: contain;
-}
-
-.left-logo {
-    height: 100px;
-    width: 100px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-right: auto;
-}
-
-.right-logo {
-    height: 40px;
-    margin-left: auto;
-}
-
-/* 篩選部分 */
-.header-container-section {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    gap: 20px;
-}
-
-/* 內容部分樣式 */
-.content-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 20px;
-}
-
-.header-container-section,
-.map-section,
-.summary-section,
-.chart-section {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    flex: 1 1 calc(33.33% - 20px);
-    box-sizing: border-box;
-    min-width: 300px;
-}
-
-
-.map-section {
-    width: 45%;
-    height: auto;
-}
-
-.summary-section {
-    width: 25%;
 }
