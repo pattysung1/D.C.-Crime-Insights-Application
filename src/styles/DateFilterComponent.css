@@ -1,0 +1,51 @@
+.date-filter-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* 讓內容置中 */
+    width: 100%;
+    max-width: 400px;
+    /* 設定固定的最大寬度 */
+    margin: 0 auto;
+    /* 自動將內容置中對齊 */
+}
+
+.date-filter-section h2 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.date-filter-section .filter-inputs {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    /* 確保篩選框和按鈕在同一行，並有適當的間距 */
+}
+
+.date-filter-section input {
+    width: calc(50% - 10px);
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+.date-filter-section button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.date-filter-section button:hover {
+    background-color: #0056b3;
+}

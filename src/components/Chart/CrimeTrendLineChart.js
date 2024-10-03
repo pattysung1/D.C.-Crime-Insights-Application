@@ -1,8 +1,8 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import '../../styles/CrimeTrendLineChart.css'; // 確保引入樣式
 
 const CrimeTrendsChart = ({ crimeData }) => {
-    // 更新數據，增加 burglary 和 drugs
     const data = crimeData || [
         { date: '2024-01', theft: 20, assault: 5, vandalism: 10, burglary: 15, drugs: 8 },
         { date: '2024-02', theft: 30, assault: 8, vandalism: 15, burglary: 18, drugs: 10 },
@@ -12,7 +12,8 @@ const CrimeTrendsChart = ({ crimeData }) => {
     ];
 
     return (
-        <div style={{ width: '100%', height: 400 }}>
+        <div className="crime-trends-chart-container">
+            <h2 className="crime-trends-chart-title">Crime Trends</h2>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -20,7 +21,6 @@ const CrimeTrendsChart = ({ crimeData }) => {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    {/* 更新 Line 來顯示新的分類 */}
                     <Line type="monotone" dataKey="theft" stroke="#8884d8" activeDot={{ r: 8 }} />
                     <Line type="monotone" dataKey="assault" stroke="#82ca9d" />
                     <Line type="monotone" dataKey="vandalism" stroke="#ffc658" />

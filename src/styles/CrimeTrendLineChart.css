@@ -4,12 +4,25 @@
     /* 設置圖表的最大寬度 */
     height: 400px;
     /* 固定高度 */
-    margin: 0 auto;
-    /* 圖表在容器內居中 */
+    margin: 20px auto;
+    /* 圖表在容器內居中，並設置與其他元素的間距 */
     padding: 20px;
     background-color: #f9f9f9;
-    border-radius: 8px;
+    border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    /* 讓標題居中 */
+}
+
+.crime-trends-chart-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
 }
 
 .recharts-wrapper {
