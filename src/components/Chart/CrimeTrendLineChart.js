@@ -2,6 +2,7 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import '../../styles/CrimeTrendLineChart.css'; // 確保引入樣式
 
+
 const CrimeTrendsChart = ({ crimeData }) => {
     const data = crimeData || [
         { date: '2024-01', theft: 20, assault: 5, vandalism: 10, burglary: 15, drugs: 8 },
