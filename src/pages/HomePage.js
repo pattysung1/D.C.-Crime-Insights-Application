@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
-import GoogleMapComponent from '../components/GoogleMapComponent';
-import TotalsComponent from '../components/TotalsComponent';
-import CrimeMapComponent from '../components/CrimeMapComponent';
-import SummaryComponent from '../components/SummaryComponent';
-import DateFilterComponent from '../components/DateFilterComponent';
-import CrimeTypeDropdown from '../components/CrimeTypeDropdown'; // 引入犯罪類型篩選組件
-import CrimeZoneDropdown from '../components/CrimeZoneDropdown'; // 引入犯罪區域篩選組件
-import ChartComponent from '../components/ChartComponent';
+import Dashboard from '../pages/Dashboard';
+import CrimeMap from '../pages/CrimeMap'; // 確保這裡的路徑是正確的
+import Reports from '../pages/Reports';
+import Settings from '../pages/Settings';
+import CrimePrediction from '../pages/CrimePrediction';
+import PublicSafety from '../pages/PublicSafety';
+import Sidebar from '../components/Sidebar'; // 引入 Sidebar 組件
 import ChatBotComponent from '../components/ChatBotComponent';
-import '../styles/HomePage.css';  // CSS
+import Header from '../components/Header'; // 引入 Header 組件
+
+import '../styles/HomePage.css'; // CSS
 
 const HomePage = () => {
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [filters, setFilters] = useState({ crimeType: 'All Crimes', dates: [null, null], crimeZone: 'All Zones' });
 
   const handleFilterChange = (newFilters) => {
@@ -26,39 +28,36 @@ const HomePage = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <header className="header">
-        <img src="/photo/dc.png" alt="Left Logo" className="logo left-logo" />
-        <h1 className="project-title">District of Columbia Crime Monitor</h1>
-        <img src="/photo/vt.png" alt="Right Logo" className="logo right-logo" />
-      </header>
+    <div className="page-container">
+      {/* 固定在最上方的 Header */}
+      <Header />
 
-      {/* 篩選部分 */}
-      <div className="header-container-section">
-        <div className="date-filter-section">
-          <DateFilterComponent onFilterChange={handleFilterChange} />
-        </div>
-        <div className="crime-type-section">
-          <CrimeTypeDropdown onCrimeTypeChange={handleCrimeTypeChange} />
-        </div>
-        <div className="crime-zone-section">
-          <CrimeZoneDropdown onZoneChange={handleZoneChange} />
-        </div>
-      </div>
+      <div className="main-container">
+        {/* 左側頁籤欄位使用 Sidebar 組件 */}
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* 內容部分 */}
-      <div className="content-container">
-        <div className="totals-section">
-          <TotalsComponent crimeType={filters.crimeType} crimeZone={filters.crimeZone} />
-        </div>
-        <div className="map-section">
-          <CrimeMapComponent crimeType={filters.crimeType} crimeZone={filters.crimeZone} />
-        </div>
-        <div className="summary-section">
-          <SummaryComponent crimeType={filters.crimeType} crimeZone={filters.crimeZone} />
-        </div>
-        <div className="chart-section">
-          <ChartComponent crimeType={filters.crimeType} crimeZone={filters.crimeZone} />
+        <div className="main-content">
+          {/* 渲染不同的頁籤內容 */}
+          {activeTab === 'dashboard' && (
+            <Dashboard
+              filters={filters}
+              handleFilterChange={handleFilterChange}
+              handleCrimeTypeChange={handleCrimeTypeChange}
+              handleZoneChange={handleZoneChange}
+            />
+          )}
+          {activeTab === 'CrimeMap' && (
+            <CrimeMap
+              filters={filters}
+              handleFilterChange={handleFilterChange}
+              handleCrimeTypeChange={handleCrimeTypeChange}
+              handleZoneChange={handleZoneChange}
+            />
+          )}
+          {activeTab === 'reports' && <Reports filters={filters} />}
+          {activeTab === 'CrimePrediction' && <CrimePrediction filters={filters} />}
+          {activeTab === 'PublicSafety' && <PublicSafety />}
+          {activeTab === 'settings' && <Settings />}
         </div>
         <div className="chatbot-section">
           <ChatBotComponent />
