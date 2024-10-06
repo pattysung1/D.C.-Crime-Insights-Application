@@ -1,60 +1,46 @@
-// Show in Dashboard
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import axios from 'axios';
-import '../../styles/CrimeTypePieChart.css'; // 引入樣式
+import '../../styles/CrimeTypePieChart.css'; // Import styles
 
-const CrimeTypePieChart = () => {
-    const [crimeTypeData, setCrimeTypeData] = useState([]);
+const CrimeTypePieChart = ({ crimeTypeData = [] }) => {
+    // Define colors for different crime types
+    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#FF5733', '#A133FF', '#00008B', '#FF9633', '#FF33A1'];
 
-    // 定義顏色集，分配給不同的犯罪類型
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#FF6384'];
+    // Ensure `crimeTypeData` is an array, and provide a fallback if it is not
+    const safeCrimeTypeData = Array.isArray(crimeTypeData) ? crimeTypeData : [];
 
-    useEffect(() => {
-        const fakeData = [
-            { type: 'Burglary', value: 120 },
-            { type: 'Assault', value: 150 },
-            { type: 'Theft', value: 300 },
-            { type: 'Vandalism', value: 100 },
-            { type: 'Drugs', value: 80 },
-        ];
-
-        setCrimeTypeData(fakeData);
-        // const fetchCrimeTypeData = async () => {
-        //     try {
-        //         const response = await axios.get('/api/crime-types');
-        //         setCrimeTypeData(response.data);
-        //     } catch (error) {
-        //         console.error('Error fetching crime type data', error);
-        //     }
-        // };
-
-        // fetchCrimeTypeData();
-    }, []);
+    // Debugging: Log the data to verify its structure
+    console.log('crimeTypeData:', safeCrimeTypeData);
 
     return (
         <div className="crime-type-pie-chart-container">
             <h2 className="crime-type-pie-chart-title">Crime Types Distribution</h2>
-            <ResponsiveContainer width="100%" height={400}>
-                <PieChart>
-                    <Pie
-                        data={crimeTypeData}
-                        dataKey="value"
-                        nameKey="type"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={150}
-                        fill="#8884d8"
-                        label
-                    >
-                        {crimeTypeData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                </PieChart>
-            </ResponsiveContainer>
+            {/* Check if there is any data to render */}
+            {safeCrimeTypeData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={400}>
+                    <PieChart>
+                        <Pie
+                            data={safeCrimeTypeData}
+                            dataKey="value"
+                            nameKey="type"
+                            cx="50%"
+                            cy="50%"
+                            outerRadius={150}
+                            fill="#8884d8"
+                            label
+                        >
+                            {safeCrimeTypeData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                    </PieChart>
+                </ResponsiveContainer>
+            ) : (
+                // Message to display when there is no data
+                <p>No data available to display the chart</p>
+            )}
         </div>
     );
 };
