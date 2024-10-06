@@ -1,0 +1,15 @@
+.chart-row {
+    display: flex;
+    justify-content: space-between;
+    /* 確保兩個圖表之間有間距 */
+    gap: 4%;
+    /* 控制兩個圖表之間的間距 */
+}
+
+.trends-section,
+.crime-type-pie-section {
+    flex: 1;
+    /* 讓每個 section 平分容器的寬度 */
+    min-width: 45%;
+    /* 設定最小寬度，確保內容不會過於擠壓 */
+}

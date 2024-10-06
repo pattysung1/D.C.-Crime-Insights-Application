@@ -1,4 +1,3 @@
-// src/components/LeafletMapComponent.js
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
@@ -24,13 +23,7 @@ L.Icon.Default.mergeOptions({
   shadowUrl: require('leaflet/dist/images/marker-shadow.png'),
 });
 
-const LeafletMapComponent = () => {
-  // Static crime data
-  const crimeData = [
-    { id: 1, lat: 38.912, lng: -77.038, type: 'Robbery' },
-    { id: 2, lat: 38.907, lng: -77.041, type: 'Assault' },
-  ];
-
+const LeafletOpenStreetMapComponent = ({ crimeData }) => {
   return (
     <MapContainer center={center} zoom={12} style={containerStyle}>
       <TileLayer
@@ -39,11 +32,18 @@ const LeafletMapComponent = () => {
       />
       {crimeData.map((crime) => (
         <Marker key={crime.id} position={[crime.lat, crime.lng]}>
-          <Popup>{crime.type}</Popup>
+          <Popup>
+            <div>
+              <strong>Crime Type:</strong> {crime.type}<br />
+              <strong>Latitude:</strong> {crime.lat}<br />
+              <strong>Longitude:</strong> {crime.lng}<br />
+              <strong>Shift:</strong> {crime.shift}
+            </div>
+          </Popup>
         </Marker>
       ))}
     </MapContainer>
   );
 };
 
-export default LeafletMapComponent;
+export default LeafletOpenStreetMapComponent;

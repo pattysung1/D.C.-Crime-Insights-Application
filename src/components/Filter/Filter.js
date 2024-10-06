@@ -1,21 +1,26 @@
 import React from 'react';
-import DateFilterComponent from './DateFilterComponent';
-import CrimeTypeDropdown from './CrimeTypeDropdown';
-import CrimeZoneDropdown from './CrimeZoneDropdown';
-import '../../styles/Filter.css';
+import CrimeTypeDropdown from './CrimeTypeDropdown';  // 類別篩選器
+import CrimeZoneDropdown from './CrimeZoneDropdown';  // 區域篩選器
+import DateFilterComponent from './DateFilterComponent';  // 日期篩選器
 
-const Filter = ({ handleFilterChange, handleCrimeTypeChange, handleZoneChange }) => {
+const Filter = ({ filters, handleFilterChange }) => {
+    const handleCrimeTypeChange = (crimeType) => {
+        handleFilterChange({ crimeType });  // 更新犯罪類型篩選
+    };
+
+    const handleZoneChange = (crimeZone) => {
+        handleFilterChange({ crimeZone });  // 更新區域篩選
+    };
+
+    const handleDateChange = (dates) => {
+        handleFilterChange({ dates });  // 更新日期篩選
+    };
+
     return (
         <div className="filter-container">
-            <div className="date-filter-section">
-                <DateFilterComponent onFilterChange={handleFilterChange} />
-            </div>
-            <div className="crime-type-section">
-                <CrimeTypeDropdown onCrimeTypeChange={handleCrimeTypeChange} />
-            </div>
-            <div className="crime-zone-section">
-                <CrimeZoneDropdown onZoneChange={handleZoneChange} />
-            </div>
+            <CrimeTypeDropdown onCrimeTypeChange={handleCrimeTypeChange} />
+            <CrimeZoneDropdown onZoneChange={handleZoneChange} />
+            <DateFilterComponent onDateChange={handleDateChange} />
         </div>
     );
 };

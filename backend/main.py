@@ -47,13 +47,15 @@ crime_category_mapping = {
 }
 
 # Calculate trends data from CSV files
+
+
 def calculate_trends():
     trends_data = []
 
     # Load each CSV file and aggregate the data by crime type
     for year, file_path in csv_files.items():
         df = pd.read_csv(file_path)
-        
+
         # Initialize a summary for each year
         crime_summary = {
             "date": year,
@@ -67,19 +69,21 @@ def calculate_trends():
             "robbery": 0,
             "sex_abuse": 0
         }
-        
+
         # Aggregate counts based on the offense type
         for offense, category in crime_category_mapping.items():
             crime_summary[category] += df[df['OFFENSE'] == offense].shape[0]
-        
+
         trends_data.append(crime_summary)
 
     # Sort trends data by year in descending order
     trends_data.sort(key=lambda x: x['date'], reverse=True)
-    
+
     return trends_data
 
 # Endpoint to fetch and save the last 30 days' data
+
+
 @app.get("/")
 async def fetch_last30_data():
     async with httpx.AsyncClient() as client:
@@ -94,43 +98,54 @@ async def fetch_last30_data():
             return {"error": "Failed to fetch data", "status_code": response.status_code}
 
 # Calculate crime data for dashboard
+
+
 @app.get("/dashboard")
 def analyze_data():
     if not os.path.exists(LOCAL_LAST30_FILE):
         return {"error": "Data file not found. Please fetch data first."}
-    
+
     with open(LOCAL_LAST30_FILE, "r") as file:
         data = json.load(file)
-    
+
     # Extract features containing crime information
     features = data.get("features", [])
-    
+
     # Calculate total crime count
     total_crimes = len(features)
-    
+
     # Calculate count by offense type
-    offense_counter = Counter(feature["attributes"]["OFFENSE"] for feature in features)
-    
+    offense_counter = Counter(
+        feature["attributes"]["OFFENSE"] for feature in features)
+
     # Determine top crime type
-    top_crime_type = offense_counter.most_common(1)[0] if offense_counter else ("N/A", 0)
-    
+    top_crime_type = offense_counter.most_common(
+        1)[0] if offense_counter else ("N/A", 0)
+
     # Calculate count by ward (High Crime Zone)
-    ward_counter = Counter(feature["attributes"]["WARD"] for feature in features)
-    high_crime_zone = ward_counter.most_common(1)[0] if ward_counter else ("N/A", 0)
-    
+    ward_counter = Counter(feature["attributes"]["WARD"]
+                           for feature in features)
+    high_crime_zone = ward_counter.most_common(
+        1)[0] if ward_counter else ("N/A", 0)
+
     # Calculate count by method of crime
-    method_counter = Counter(feature["attributes"]["METHOD"] for feature in features)
-    top_method = method_counter.most_common(1)[0] if method_counter else ("N/A", 0)
-    
+    method_counter = Counter(feature["attributes"]["METHOD"]
+                             for feature in features)
+    top_method = method_counter.most_common(
+        1)[0] if method_counter else ("N/A", 0)
+
     # Calculate count by shift (time of crime)
-    shift_counter = Counter(feature["attributes"]["SHIFT"] for feature in features)
-    top_shift = shift_counter.most_common(1)[0] if shift_counter else ("N/A", 0)
-    
+    shift_counter = Counter(feature["attributes"]["SHIFT"]
+                            for feature in features)
+    top_shift = shift_counter.most_common(
+        1)[0] if shift_counter else ("N/A", 0)
+
     # Generate trends data from CSV files
     trends_data = calculate_trends()
-    
+
     # Calculate distribution data for the last 30 days
-    distribution_data = {category: 0 for category in crime_category_mapping.values()}
+    distribution_data = {
+        category: 0 for category in crime_category_mapping.values()}
     for feature in features:
         offense = feature["attributes"]["OFFENSE"]
         category = crime_category_mapping.get(offense)
@@ -154,3 +169,57 @@ def analyze_data():
             "distribution": distribution_data
         }
     }
+
+
+@app.get("/crime-data")
+def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = None, endDate: str = None):
+    if not os.path.exists(LOCAL_LAST30_FILE):
+        return {"error": "Data file not found. Please fetch data first."}
+
+    with open(LOCAL_LAST30_FILE, "r") as file:
+        data = json.load(file)
+
+    features = data.get("features", [])
+
+    # 過濾數據
+    filtered_data = []
+    for idx, feature in enumerate(features):
+        attributes = feature.get("attributes", {})
+        lat = attributes.get("LATITUDE")
+        lng = attributes.get("LONGITUDE")
+        crime_type = attributes.get("OFFENSE")
+        shift = attributes.get("SHIFT")
+        crime_zone = attributes.get("WARD")  # 假設 "WARD" 表示區域
+        crime_date = attributes.get("REPORT_DAT")
+
+        # 篩選犯罪類型
+        if crimeType and crimeType != "All Crimes" and crime_type != crimeType:
+            continue
+
+        # 篩選區域
+        if zone and zone != "All Zones" and crime_zone != zone:
+            continue
+
+        # 篩選日期
+        if startDate and endDate:
+            try:
+                crime_date_obj = pd.to_datetime(
+                    crime_date)  # 將日期轉換為 DateTime 格式
+                if not (pd.to_datetime(startDate) <= crime_date_obj <= pd.to_datetime(endDate)):
+                    continue
+            except Exception as e:
+                print(f"Error parsing date for feature {idx}: {e}")
+                continue
+
+        # 將篩選後的數據加入列表
+        filtered_data.append({
+            "id": idx,
+            "lat": lat,
+            "lng": lng,
+            "type": crime_type,
+            "shift": shift,
+            "zone": crime_zone,
+            "date": crime_date
+        })
+
+    return filtered_data

@@ -3,7 +3,7 @@ import axios from 'axios';
 import CrimeOverviewComponent from '../components/CrimeOverviewComponent';
 import CrimeTrendsChart from '../components/Chart/CrimeTrendLineChart';
 import CrimeTypePieChart from '../components/Chart/CrimeTypePieChart';
-// import '../styles/Dashboard.css';
+import '../styles/Dashboard.css';
 
 const Dashboard = () => {
     const [dashboardData, setDashboardData] = useState(null);
@@ -53,15 +53,16 @@ const Dashboard = () => {
                     shift={dashboardData?.overview?.top_shift || "N/A"}
                 />
 
-                <section className="trends-section">
-                    {/* Pass trends data to CrimeTrendsChart */}
-                    <CrimeTrendsChart crimeData={trendData} />
-                </section>
+                {/* 使用 flexbox 進行佈局 */}
+                <div className="chart-row">
+                    <section className="trends-section">
+                        <CrimeTrendsChart crimeData={trendData} />
+                    </section>
 
-                <section className="crime-type-pie-section">
-                    {/* Pass transformed crimeTypeData to CrimeTypePieChart */}
-                    <CrimeTypePieChart crimeTypeData={crimeTypeData} />
-                </section>
+                    <section className="crime-type-pie-section">
+                        <CrimeTypePieChart crimeTypeData={crimeTypeData} />
+                    </section>
+                </div>
             </div>
         </>
     );
