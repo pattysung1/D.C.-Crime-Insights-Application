@@ -223,3 +223,18 @@ def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = Non
         })
 
     return filtered_data
+
+
+@app.get("/crime-types")
+def get_crime_types():
+    if not os.path.exists(LOCAL_LAST30_FILE):
+        return {"error": "Data file not found. Please fetch data first."}
+
+    with open(LOCAL_LAST30_FILE, "r") as file:
+        data = json.load(file)
+
+    # 獲取所有犯罪類型（`OFFENSE` 字段），並去重
+    crime_types = list(set(feature["attributes"]["OFFENSE"]
+                       for feature in data.get("features", [])))
+
+    return crime_types
