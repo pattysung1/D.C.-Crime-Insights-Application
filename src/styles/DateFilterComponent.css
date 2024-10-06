@@ -2,12 +2,12 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* 讓內容置中 */
+    /* Center the content */
     width: 100%;
     max-width: 400px;
-    /* 設定固定的最大寬度 */
+    /* Set a fixed maximum width */
     margin: 0 auto;
-    /* 自動將內容置中對齊 */
+    /* Automatically center the content */
 }
 
 .date-filter-section h2 {
@@ -24,7 +24,7 @@
     justify-content: space-between;
     gap: 10px;
     width: 100%;
-    /* 確保篩選框和按鈕在同一行，並有適當的間距 */
+    /* Ensure filter inputs and buttons are on the same line with proper spacing */
 }
 
 .date-filter-section input {

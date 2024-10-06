@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../../styles/Dropdown.css'; // 新增的 CSS 文件
+import '../../styles/Dropdown.css';
 
 const CrimeZoneDropdown = ({ onZoneChange }) => {
     const [selectedZone, setSelectedZone] = useState('');
@@ -8,7 +8,7 @@ const CrimeZoneDropdown = ({ onZoneChange }) => {
 
     const handleZoneChange = (e) => {
         setSelectedZone(e.target.value);
-        // 傳遞選擇的區域給父組件
+        // Pass the selected zone to the parent component
         onZoneChange(e.target.value);
     };
 

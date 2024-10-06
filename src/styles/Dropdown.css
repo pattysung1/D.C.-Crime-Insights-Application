@@ -1,4 +1,4 @@
-/* 外層容器的樣式 */
+/* Styles for the outer container */
 .dropdown {
     display: flex;
     flex-direction: column;
@@ -14,19 +14,18 @@
     margin-bottom: 10px;
 }
 
-
-/* 下拉選單的樣式 */
+/* Styles for the dropdown menu */
 select {
     width: 250px;
     padding: 8px;
     font-size: 14px;
     border: 2px solid #ccc;
     border-radius: 30px;
-    /* 圓角效果 */
+    /* Rounded corners */
     background-color: #f9f9f9;
     color: #333;
     appearance: none;
-    /* 隱藏瀏覽器默認的下拉箭頭 */
+    /* Hide the default dropdown arrow */
     -webkit-appearance: none;
     -moz-appearance: none;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 140'><polygon points='70,100 40,40 100,40' style='fill:%23333'/></svg>");
@@ -37,19 +36,19 @@ select {
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* 懸停時的效果 */
+/* Hover effect */
 select:hover {
     border-color: #888;
 }
 
-/* 聚焦時的效果 */
+/* Focus effect */
 select:focus {
     outline: none;
     border-color: #555;
     box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
 }
 
-/* 讓選項的顏色更具可讀性 */
+/* Make the option text more readable */
 option {
     color: #333;
 }

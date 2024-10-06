@@ -1,5 +1,5 @@
 import React from 'react';
-import '../styles/CardComponent.css'; // 確保引入樣式
+import '../styles/CardComponent.css';
 
 const CardComponent = ({ title, value }) => {
     return (

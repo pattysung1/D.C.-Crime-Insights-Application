@@ -10,7 +10,7 @@
     justify-content: space-between;
     gap: 20px;
     flex-wrap: wrap;
-    /* 確保在較小屏幕上卡片可以換行 */
+    /* Ensure cards wrap on smaller screens */
 }
 
 .crime-overview-container h2 {

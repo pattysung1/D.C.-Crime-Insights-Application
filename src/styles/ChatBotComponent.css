@@ -8,22 +8,21 @@
     border: 1px solid rgb(0, 0, 0);
     border-radius: 20px;
     overflow: hidden;
-    /* 防止內部元素溢出，保持圓角效果 */
-    /* 將圓角設置更大 */
+    /* Prevent internal elements from overflowing and maintain rounded corners */
+    /* Set larger rounded corners */
     z-index: 1000;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
 }
 
-
 .chatbot-container h2 {
     background-color: rgb(67, 138, 230);
     color: white;
     padding: 10px;
-    /* 或者單獨給標題添加 padding */
+    /* Add padding specifically to the title */
     margin: 0;
-    /* 避免不必要的外邊距 */
+    /* Avoid unnecessary margins */
 }
 
 .chatbot-input {
@@ -32,47 +31,46 @@
     background-color: #fff;
     border-top: 1px solid #ccc;
     align-items: center;
-    /* 保證按鈕和輸入框垂直居中對齊 */
+    /* Ensure button and input field are vertically aligned */
 }
 
 .chatbot-input input {
     flex-grow: 1;
     padding: 10px;
     font-size: 16px;
-    /* 增加字體大小 */
+    /* Increase font size */
     border: 1px solid #ccc;
     border-radius: 5px;
     outline: none;
-    /* 移除輸入框的預設外邊框 */
+    /* Remove default input outline */
 }
 
 .chatbot-input input::placeholder {
     font-size: 16px;
-    /* 調整 placeholder 的字體大小 */
+    /* Adjust the font size of the placeholder */
 }
 
 .chatbot-input button {
     margin-left: 10px;
     padding: 10px 20px;
-    /* 增加按鈕內邊距 */
+    /* Increase button padding */
     font-size: 16px;
-    /* 調整按鈕字體大小 */
+    /* Adjust button font size */
     border: none;
     background-color: #4CAF50;
     color: white;
     border-radius: 5px;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    /* 增加按鈕的過渡效果 */
+    /* Add transition effect to the button */
 }
 
 .chatbot-input button:hover {
     background-color: #45a049;
-    /* 調整按鈕 hover 時的顏色 */
+    /* Change button color on hover */
 }
 
-
-/* 用來美化用戶和機器人的訊息樣式 */
+/* Styles for user and bot messages */
 .chatbot-messages {
     display: flex;
     flex-direction: column;
@@ -87,11 +85,11 @@
     margin-bottom: 5px;
     border-radius: 8px;
     align-self: flex-end;
-    /* 讓使用者訊息靠右 */
+    /* Align user message to the right */
     max-width: 60%;
-    /* 設定最大寬度，避免訊息佔滿整個畫面 */
+    /* Set a maximum width to avoid taking up the entire screen */
     word-wrap: break-word;
-    /* 遇到長字時自動換行 */
+    /* Automatically wrap long words */
 }
 
 .bot-message {
@@ -100,23 +98,22 @@
     margin-bottom: 5px;
     border-radius: 8px;
     align-self: flex-start;
-    /* 讓機器人訊息靠左 */
+    /* Align bot message to the left */
     max-width: 60%;
-    /* 設定最大寬度 */
+    /* Set a maximum width */
     word-wrap: break-word;
-    /* 遇到長字時自動換行 */
+    /* Automatically wrap long words */
 }
-
 
 .chatbot-toggle {
     position: fixed;
     bottom: 20px;
-    /* 距離底部 20px */
+    /* 20px from the bottom */
     right: 20px;
-    /* 距離右側 20px */
+    /* 20px from the right */
     cursor: pointer;
     z-index: 1001;
-    /* 保證它浮動在其他元素之上 */
+    /* Ensure it floats above other elements */
 }
 
 .chatbot-logo {

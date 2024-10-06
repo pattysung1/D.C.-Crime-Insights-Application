@@ -1,11 +1,8 @@
-/* 整體 Sidebar 佈局 */
+/* Overall Sidebar Layout */
 .sidebar {
-    width: 240px;
-    /* 固定寬度 */
-    height: 100vh;
-    /* 滿屏高度 */
-    background-color: #2c3e50;
-    /* 深藍色背景 */
+    width: 240px; /* Fixed width */
+    height: 100vh; /* Full screen height */
+    background-color: #2c3e50; /* Dark blue background */
     color: white;
     display: flex;
     flex-direction: column;
@@ -38,13 +35,11 @@
 }
 
 .sidebar-menu li:hover {
-    background-color: #34495e;
-    /* 懸停時的效果 */
+    background-color: #34495e; /* Effect when hovered */
 }
 
 .sidebar-menu li.active {
-    background-color: #1abc9c;
-    /* 選中項目的高亮顏色 */
+    background-color: #1abc9c; /* Highlight color for selected item */
 }
 
 .menu-icon {
@@ -52,7 +47,7 @@
     font-size: 1.2rem;
 }
 
-/* Sidebar footer 部分 */
+/* Sidebar footer section */
 .sidebar-footer {
     margin-top: auto;
     text-align: left;
@@ -75,8 +70,7 @@
     padding: 10px;
 }
 
-/* 左側的 sidebar */
-
+/* Left Sidebar */
 .sidebar ul {
     list-style-type: none;
     padding: 0;
@@ -100,7 +94,7 @@
     background-color: #16a085;
 }
 
-/* 右側內容區域 */
+/* Right Content Area */
 .content {
     flex: 1;
     padding: 20px;

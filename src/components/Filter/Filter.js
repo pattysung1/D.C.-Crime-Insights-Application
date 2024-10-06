@@ -2,7 +2,7 @@ import React from 'react';
 import DateFilterComponent from './DateFilterComponent';
 import CrimeTypeDropdown from './CrimeTypeDropdown';
 import CrimeZoneDropdown from './CrimeZoneDropdown';
-import '../../styles/Filter.css'; // 引入樣式
+import '../../styles/Filter.css';
 
 const Filter = ({ handleFilterChange, handleCrimeTypeChange, handleZoneChange }) => {
     return (

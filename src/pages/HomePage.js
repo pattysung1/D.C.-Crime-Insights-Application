@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import Dashboard from '../pages/Dashboard';
-import CrimeMap from '../pages/CrimeMap'; // 確保這裡的路徑是正確的
+import CrimeMap from '../pages/CrimeMap'; // Ensure the path is correct
 import Reports from '../pages/Reports';
 import Settings from '../pages/Settings';
 import CrimePrediction from '../pages/CrimePrediction';
 import PublicSafety from '../pages/PublicSafety';
-import Sidebar from '../components/Sidebar'; // 引入 Sidebar 組件
+import Sidebar from '../components/Sidebar'; // Import Sidebar component
 import ChatBotComponent from '../components/ChatBotComponent';
-import Header from '../components/Header'; // 引入 Header 組件
+import Header from '../components/Header'; // Import Header component
 
 import '../styles/HomePage.css'; // CSS
 
@@ -29,15 +29,15 @@ const HomePage = () => {
 
   return (
     <div className="page-container">
-      {/* 固定在最上方的 Header */}
+      {/* Header fixed at the top */}
       <Header />
 
       <div className="main-container">
-        {/* 左側頁籤欄位使用 Sidebar 組件 */}
+        {/* Sidebar on the left side */}
         <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
         <div className="main-content">
-          {/* 渲染不同的頁籤內容 */}
+          {/* Render different tab content */}
           {activeTab === 'dashboard' && (
             <Dashboard
               filters={filters}

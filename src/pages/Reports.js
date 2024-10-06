@@ -10,7 +10,7 @@ const Reports = ({filters}) => {
             <div className="totals-section">
                     <TotalsComponent crimeType={filters.crimeType} crimeZone={filters.crimeZone} />
                 </div>
-            {/* 你可以在這裡加入 Reports 相關的內容 */}
+            {/* You can add Reports related content here */}
         </div>
     );
 };

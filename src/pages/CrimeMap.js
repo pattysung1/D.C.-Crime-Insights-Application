@@ -1,20 +1,21 @@
 import React from 'react';
-import Filter from '../components/Filter/Filter'; // 引入 Filter 組件
-// import '../styles/CrimeMap.css'; // 假設你有相關樣式
+import Filter from '../components/Filter/Filter'; // Import the Filter component
+// import '../styles/CrimeMap.css'; // Assuming you have relevant styles
 import CrimeMapComponent from '../components/CrimeMapComponent';
+
 const CrimeMap = ({ filters, handleFilterChange, handleCrimeTypeChange, handleZoneChange }) => {
     return (
         <div className="crime-map-container">
-            {/* 在 CrimeMap 中添加 Filter */}
+            {/* Add Filter in CrimeMap */}
             <Filter
                 handleFilterChange={handleFilterChange}
                 handleCrimeTypeChange={handleCrimeTypeChange}
                 handleZoneChange={handleZoneChange}
             />
 
-            {/* 這裡可以放你的地圖展示部分 */}
+            {/* Here you can place your map display section */}
             <div className="map-display">
-                {/* 地圖的代碼... */}
+                {/* Map code... */}
                 <p>This is the CrimeMap page content.</p>
                 <CrimeMapComponent />
             </div>

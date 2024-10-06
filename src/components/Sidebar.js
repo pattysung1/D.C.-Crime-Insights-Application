@@ -1,5 +1,5 @@
 import React from 'react';
-import '../styles/Sidebar.css'; // 引入正確的 Sidebar 樣式
+import '../styles/Sidebar.css';
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
     return (

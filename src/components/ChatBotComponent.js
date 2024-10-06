@@ -4,7 +4,7 @@ import '../styles/ChatBotComponent.css';  // Import your chatbot styles
 const ChatBotComponent = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
-  const [isOpen, setIsOpen] = useState(false);  // 控制 chat bot 是否展開
+  const [isOpen, setIsOpen] = useState(false);  // Control whether the chatbot is expanded
 
   const handleSendMessage = () => {
     if (inputValue.trim()) {
@@ -29,17 +29,17 @@ const ChatBotComponent = () => {
   };
 
   const toggleChatBot = () => {
-    setIsOpen(!isOpen);  // 切換 chat bot 開關
+    setIsOpen(!isOpen);  // Toggle the chatbot visibility
   };
 
   return (
     <div>
-      {/* 展示 chat bot 的 logo，點擊後展開對話框 */}
+      {/* Display chatbot logo, click to expand the chatbox */}
       <div className="chatbot-toggle" onClick={toggleChatBot}>
         <img src="/photo/chatbot-logo.png" alt="ChatBot Logo" className="chatbot-logo" />
       </div>
 
-      {/* 當 isOpen 為 true 時才顯示對話框 */}
+      {/* Display the chatbox only when isOpen is true */}
       {isOpen && (
         <div className="chatbot-container">
           <h2>ChatBot</h2>

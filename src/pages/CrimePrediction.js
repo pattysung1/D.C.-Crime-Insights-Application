@@ -5,7 +5,7 @@ const CrimePrediction = () => {
         <div>
             <h2>CrimePrediction</h2>
             <p>This is the CrimePrediction page content.</p>
-            {/* 你可以在這裡加入 Dashboard 相關的內容 */}
+            {/* You can add Dashboard related content here */}
         </div>
     );
 };

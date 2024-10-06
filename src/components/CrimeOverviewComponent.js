@@ -1,6 +1,6 @@
 import React from 'react';
-import CardComponent from './CardComponent';  // 引入卡片組件
-import '../styles/CrimeOverviewComponent.css'; // 確保引入樣式
+import CardComponent from './CardComponent';
+import '../styles/CrimeOverviewComponent.css';
 
 const CrimeOverviewComponent = ({
     totalCrimes,
@@ -13,7 +13,7 @@ const CrimeOverviewComponent = ({
         <div className="crime-overview-container">
             <h2>Crime Overview</h2>
             <div className="overview-cards">
-                {/* 使用條件渲染來顯示替代內容 */}
+                {/* Use conditional rendering to display alternative content */}
                 <CardComponent title="Total Crimes" value={totalCrimes !== null && totalCrimes !== undefined ? totalCrimes : "N/A"} />
                 <CardComponent title="Top Crime Type" value={topCrimeType || "N/A"} />
                 <CardComponent title="High Crime Zone" value={highCrimeZone || "N/A"} />

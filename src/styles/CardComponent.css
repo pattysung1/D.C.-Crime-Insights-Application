@@ -14,7 +14,7 @@
     text-align: center;
     width: 100%;
     max-width: 200px;
-    /* 限制每張卡片的最大寬度 */
+    /* Set a maximum width for each card */
 }
 
 .card h3 {

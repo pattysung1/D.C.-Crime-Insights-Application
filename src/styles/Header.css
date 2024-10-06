@@ -1,18 +1,18 @@
 /* src/styles/Header.css */
 
-/* Header 部分 */
+/* Header section */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px;
-    background-color: white; /* 背景色 */
-    color: black; /* 字體顏色 */
+    background-color: white; /* Background color */
+    color: black; /* Font color */
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1000; /* 保證在最上層 */
+    z-index: 1000; /* Ensure it's on top */
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
@@ -33,4 +33,3 @@
     height: 40px;
     margin-left: auto;
 }
-

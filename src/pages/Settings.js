@@ -5,7 +5,7 @@ const Settings = () => {
         <div>
             <h2>Settings</h2>
             <p>This is the Settings page content.</p>
-            {/* 你可以在這裡加入 Settings 相關的內容 */}
+            {/* You can add Settings related content here */}
         </div>
     );
 };
