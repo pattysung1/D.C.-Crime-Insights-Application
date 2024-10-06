@@ -22,12 +22,12 @@ app.add_middleware(
 
 # List of crime CSV files and their respective years
 csv_files = {
-    "2019": "./Crime_Incidents/Crime_Incidents_in_2019.csv",
-    "2020": "./Crime_Incidents/Crime_Incidents_in_2020.csv",
-    "2021": "./Crime_Incidents/Crime_Incidents_in_2021.csv",
-    "2022": "./Crime_Incidents/Crime_Incidents_in_2022.csv",
+    "2024": "./Crime_Incidents/Crime_Incidents_in_2024.csv",
     "2023": "./Crime_Incidents/Crime_Incidents_in_2023.csv",
-    "2024": "./Crime_Incidents/Crime_Incidents_in_2024.csv"
+    "2022": "./Crime_Incidents/Crime_Incidents_in_2022.csv",
+    "2021": "./Crime_Incidents/Crime_Incidents_in_2021.csv",
+    "2020": "./Crime_Incidents/Crime_Incidents_in_2020.csv",
+    "2019": "./Crime_Incidents/Crime_Incidents_in_2019.csv",
 }
 
 # Mapping for offense types to broader categories
@@ -76,8 +76,8 @@ def calculate_trends():
 
         trends_data.append(crime_summary)
 
-    # Sort trends data by year in descending order
-    trends_data.sort(key=lambda x: x['date'], reverse=True)
+    # Sort trends data by year in ascending order
+    trends_data.sort(key=lambda x: x['date'])
 
     return trends_data
 
