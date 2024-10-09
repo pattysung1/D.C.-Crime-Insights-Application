@@ -1,63 +1,85 @@
 import React, { useState, useEffect } from 'react';
-import Filter from '../components/Filter/Filter';  // 包含篩選器
-import CrimeMapComponent from '../components/CrimeMapComponent';  // 地圖顯示組件
-import axios from 'axios';  // 用於向後端發送請求
+import Filter from '../components/Filter/Filter';  // Include filter
+import CrimeMapComponent from '../components/CrimeMapComponent';  // Map display component
+import axios from 'axios';  // Used to send requests to the backend// Make sure to create this CSS file if it doesn't exist
 
 const CrimeMap = () => {
-    const [crimeData, setCrimeData] = useState([]);  // 存儲所有犯罪數據
-    const [filteredData, setFilteredData] = useState([]);  // 存儲篩選後的數據
+    const [crimeData, setCrimeData] = useState([]);  // Store all crime data
+    const [filteredData, setFilteredData] = useState([]);  // Store filtered data
+    const [crimeTypes, setCrimeTypes] = useState(['All Crimes']);  // Dynamic crime types
+    const [crimeZones, setCrimeZones] = useState(['All Zones']);  // Dynamic crime zones
     const [filters, setFilters] = useState({
-        crimeType: 'All Crimes',  // 默認為顯示所有犯罪類型
-        crimeZone: 'All Zones',  // 默認為所有區域
-        dates: [null, null],  // 默認無日期篩選
+        crimeType: 'All Crimes',  // Default to show all crime types
+        crimeZone: 'All Zones',  // Default to all zones
+        dates: [null, null],  // Default no date filter
     });
 
-    // 從後端獲取犯罪數據
+    // Fetch crime data and filter options from the backend
     useEffect(() => {
-        const fetchCrimeData = async () => {
+        const fetchData = async () => {
             try {
-                const response = await axios.get('http://127.0.0.1:8000/crime-data');  // 獲取後端的所有犯罪數據
-                setCrimeData(response.data);  // 存儲所有數據
-                setFilteredData(response.data);  // 初次顯示所有數據
+                const [crimeDataResponse, crimeTypesResponse, crimeZonesResponse] = await Promise.all([
+                    axios.get('http://127.0.0.1:8000/crime-data'),
+                    axios.get('http://127.0.0.1:8000/crime-types'),
+                    axios.get('http://127.0.0.1:8000/crime-zones')
+                ]);
+
+                setCrimeData(crimeDataResponse.data);
+                setFilteredData(crimeDataResponse.data);
+                setCrimeTypes(['All Crimes', ...crimeTypesResponse.data]);
+
+                // Check if 'All Zones' is already included in the response
+                const zones = crimeZonesResponse.data;
+                setCrimeZones(zones.includes('All Zones') ? zones : ['All Zones', ...zones]);
+
+                // Log the fetched data
+                console.log('Crime Types:', crimeTypesResponse.data);
+                console.log('Crime Zones:', crimeZonesResponse.data);
             } catch (error) {
-                console.error('Error fetching crime data:', error);  // 如果有錯誤則顯示
+                console.error('Error fetching data:', error);
             }
         };
 
-        fetchCrimeData();
+        fetchData();
     }, []);
 
-    // 根據篩選器條件過濾數據
+    // Filter data based on filter conditions
     useEffect(() => {
-        const { crimeType, crimeZone, dates } = filters;  // 提取篩選條件
+        const { crimeType, crimeZone, dates } = filters;  // Extract filter conditions
 
         const filtered = crimeData.filter((crime) => {
-            const matchType = crimeType === 'All Crimes' || crime.type === crimeType;  // 如果是 "All Crimes" 則不篩選類別
-            const matchZone = crimeZone === 'All Zones' || crime.zone === crimeZone;  // 如果是 "All Zones" 則不篩選區域
-            const matchDate = !dates[0] ||  // 如果沒有日期篩選，則通過所有數據
-                (new Date(crime.date) >= new Date(dates[0]) && new Date(crime.date) <= new Date(dates[1]));  // 篩選日期範圍內的數據
+            const matchType = crimeType === 'All Crimes' || crime.type === crimeType;  // If "All Crimes", don't filter by type
+            const matchZone = crimeZone === 'All Zones' || crime.zone === crimeZone;  // If "All Zones", don't filter by zone
+            const matchDate = !dates[0] ||  // If no date filter, pass all data
+                (new Date(crime.date) >= new Date(dates[0]) && new Date(crime.date) <= new Date(dates[1]));  // Filter data within date range
 
-            return matchType && matchZone && matchDate;  // 所有條件都匹配才返回
+            return matchType && matchZone && matchDate;  // Return only if all conditions match
         });
 
-        setFilteredData(filtered);  // 更新篩選後的數據
-    }, [filters, crimeData]);  // 每當 filters 或 crimeData 變化時重新篩選
+        setFilteredData(filtered);  // Update filtered data
+    }, [filters, crimeData]);  // Re-filter whenever filters or crimeData change
 
-    // 處理篩選器的變更
+    // Handle filter changes
     const handleFilterChange = (newFilters) => {
         setFilters((prevFilters) => ({
             ...prevFilters,
-            ...newFilters,  // 更新篩選器的值
+            ...newFilters,  // Update filter values
         }));
     };
 
     return (
-        <div className="crime-map-container">
-            {/* 篩選器 */}
-            <Filter filters={filters} handleFilterChange={handleFilterChange} />
-
-            {/* 地圖展示區域，顯示篩選後的數據 */}
-            <CrimeMapComponent crimeData={filteredData} />
+        <div className="crime-map-page">
+            <div className="filter-section">
+                <Filter
+                    filters={filters}
+                    handleFilterChange={handleFilterChange}
+                    crimeTypes={crimeTypes}
+                    crimeZones={crimeZones}
+                />
+            </div>
+            <div className="map-section">
+                <CrimeMapComponent crimeData={filteredData} />
+            </div>
         </div>
     );
 };

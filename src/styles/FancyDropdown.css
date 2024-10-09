@@ -1,0 +1,159 @@
+.fancy-dropdown {
+    width: 100%;
+    position: relative;
+    margin-bottom: 15px;
+    z-index: 1200; /* Ensure dropdowns are on the topmost layer */
+}
+
+.fancy-dropdown h2 {
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #333;
+    font-weight: 600;
+}
+
+.dropdown-container {
+    position: relative;
+}
+
+.dropdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.dropdown-header:hover {
+    background-color: #f0f0f0;
+}
+
+.arrow {
+    border: solid #333;
+    border-width: 0 2px 2px 0;
+    display: inline-block;
+    padding: 3px;
+    transition: transform 0.3s ease;
+}
+
+.arrow.down {
+    transform: rotate(45deg);
+}
+
+.arrow.up {
+    transform: rotate(-135deg);
+}
+
+.dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1200; /* Ensure dropdown list is on the topmost layer */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-list li {
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-list li:hover {
+    background-color: #f0f0f0;
+}
+
+.date-picker-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 0 0 4px 4px;
+    padding: 10px;
+    z-index: 1200; /* Ensure date picker dropdown is on the topmost layer */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Remove or comment out all the .rdr* styles */
+
+/* Add these Mantine-specific styles */
+.mantine-DatePickerInput-dropdown {
+    z-index: 1200 !important; /* Ensure date picker dropdown is on the topmost layer */
+}
+
+.mantine-DatePickerInput-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: white;
+    color: #333;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.mantine-DatePickerInput-input:hover {
+    border-color: #888;
+}
+
+.mantine-DatePickerInput-input:focus {
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+    outline: none;
+}
+
+.mantine-DatePickerInput-label {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.mantine-DatePickerInput-day {
+    color: #333;
+}
+
+.mantine-DatePickerInput-day[data-selected] {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.mantine-DatePickerInput-day[data-in-range] {
+    background-color: rgba(74, 144, 226, 0.2);
+}
+
+/* Add this new style to ensure the date picker is above other elements */
+.mantine-DatePickerInput-wrapper {
+    position: relative;
+    z-index: 1200 !important;
+}
+
+/* Mantine-specific styles */
+.mantine-Select-dropdown {
+    z-index: 1200 !important; /* Ensure select dropdown is on the topmost layer */
+}
+
+.mantine-Select-input {
+    width: 100%;
+}
+
+/* Ensure the date picker is above other elements */
+.mantine-DatePickerInput-wrapper,
+.mantine-DatePickerInput-dropdown {
+    position: relative;
+    z-index: 1200 !important;
+}

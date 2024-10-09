@@ -47,8 +47,6 @@ crime_category_mapping = {
 }
 
 # Calculate trends data from CSV files
-
-
 def calculate_trends():
     trends_data = []
 
@@ -82,8 +80,6 @@ def calculate_trends():
     return trends_data
 
 # Endpoint to fetch and save the last 30 days' data
-
-
 @app.get("/")
 async def fetch_last30_data():
     async with httpx.AsyncClient() as client:
@@ -98,8 +94,6 @@ async def fetch_last30_data():
             return {"error": "Failed to fetch data", "status_code": response.status_code}
 
 # Calculate crime data for dashboard
-
-
 @app.get("/dashboard")
 def analyze_data():
     if not os.path.exists(LOCAL_LAST30_FILE):
@@ -170,7 +164,6 @@ def analyze_data():
         }
     }
 
-
 @app.get("/crime-data")
 def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = None, endDate: str = None):
     if not os.path.exists(LOCAL_LAST30_FILE):
@@ -181,7 +174,7 @@ def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = Non
 
     features = data.get("features", [])
 
-    # 過濾數據
+    # Filter data
     filtered_data = []
     for idx, feature in enumerate(features):
         attributes = feature.get("attributes", {})
@@ -189,29 +182,30 @@ def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = Non
         lng = attributes.get("LONGITUDE")
         crime_type = attributes.get("OFFENSE")
         shift = attributes.get("SHIFT")
-        crime_zone = attributes.get("WARD")  # 假設 "WARD" 表示區域
+        crime_zone = attributes.get("WARD")  # Assuming "WARD" represents the zone
         crime_date = attributes.get("REPORT_DAT")
+        method = attributes.get("METHOD")  # Extract the method of crime
 
-        # 篩選犯罪類型
+        # Filter by crime type
         if crimeType and crimeType != "All Crimes" and crime_type != crimeType:
             continue
 
-        # 篩選區域
+        # Filter by zone
         if zone and zone != "All Zones" and crime_zone != zone:
             continue
 
-        # 篩選日期
+        # Filter by date
         if startDate and endDate:
             try:
                 crime_date_obj = pd.to_datetime(
-                    crime_date)  # 將日期轉換為 DateTime 格式
+                    crime_date)  # Convert date to DateTime format
                 if not (pd.to_datetime(startDate) <= crime_date_obj <= pd.to_datetime(endDate)):
                     continue
             except Exception as e:
                 print(f"Error parsing date for feature {idx}: {e}")
                 continue
 
-        # 將篩選後的數據加入列表
+        # Add filtered data to the list
         filtered_data.append({
             "id": idx,
             "lat": lat,
@@ -219,11 +213,11 @@ def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = Non
             "type": crime_type,
             "shift": shift,
             "zone": crime_zone,
-            "date": crime_date
+            "date": crime_date,
+            "method": method  # Include the method in the response
         })
 
     return filtered_data
-
 
 @app.get("/crime-types")
 def get_crime_types():
@@ -233,8 +227,23 @@ def get_crime_types():
     with open(LOCAL_LAST30_FILE, "r") as file:
         data = json.load(file)
 
-    # 獲取所有犯罪類型（`OFFENSE` 字段），並去重
+    # Get all unique crime types (OFFENSE field)
     crime_types = list(set(feature["attributes"]["OFFENSE"]
                        for feature in data.get("features", [])))
 
     return crime_types
+
+@app.get("/crime-zones")
+def get_crime_zones():
+    if not os.path.exists(LOCAL_LAST30_FILE):
+        return {"error": "Data file not found. Please fetch data first."}
+
+    with open(LOCAL_LAST30_FILE, "r") as file:
+        data = json.load(file)
+
+    # Get all unique crime zones (WARD field), excluding null values
+    crime_zones = list(set(feature["attributes"]["WARD"]
+                       for feature in data.get("features", [])
+                       if feature["attributes"]["WARD"] is not None))
+
+    return crime_zones

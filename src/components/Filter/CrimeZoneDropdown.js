@@ -1,28 +1,28 @@
-import React, { useState } from 'react';
-import '../../styles/Dropdown.css';
+import React from 'react';
+import { Select } from '@mantine/core';
 
-const CrimeZoneDropdown = ({ onZoneChange }) => {
-    const [selectedZone, setSelectedZone] = useState('');
-
-    const crimeZones = ['District of Columbia', 'Maryland', 'Virginia'];
-
-    const handleZoneChange = (e) => {
-        setSelectedZone(e.target.value);
-        // Pass the selected zone to the parent component
-        onZoneChange(e.target.value);
+const CrimeZoneDropdown = ({ onZoneChange, crimeZones, selectedCrimeZone }) => {
+    const handleChange = (value) => {
+        onZoneChange(value);
     };
 
+    // Sort the crime zones numerically
+    const sortedCrimeZones = [...crimeZones].sort((a, b) => {
+        return parseInt(a) - parseInt(b);
+    });
+
     return (
-        <div className="dropdown">
+        <div className="fancy-dropdown">
             <h2>Crime Zone</h2>
-            <select id="crime-zone" value={selectedZone} onChange={handleZoneChange}>
-                <option value="">Select a zone</option>
-                {crimeZones.map((zone) => (
-                    <option key={zone} value={zone}>
-                        {zone}
-                    </option>
-                ))}
-            </select>
+            <Select
+                data={sortedCrimeZones.map(zone => ({ value: zone, label: zone }))}
+                value={selectedCrimeZone}
+                onChange={handleChange}
+                placeholder="All Zones"
+                searchable
+                nothingFound="No options"
+                maxDropdownHeight={280}
+            />
         </div>
     );
 };

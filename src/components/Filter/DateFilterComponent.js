@@ -1,28 +1,38 @@
 import React, { useState } from 'react';
-import { DatePicker, Button } from 'antd';
-import '../../styles/DateFilterComponent.css';
+import { DatePickerInput } from '@mantine/dates';
+import { MantineProvider } from '@mantine/core';
+import '@mantine/core/styles.css';
+import '@mantine/dates/styles.css';
 
+const DateFilterComponent = ({ onDateChange }) => {
+  const [dateRange, setDateRange] = useState([null, null]);
 
-const { RangePicker } = DatePicker;
+  // Calculate the date range for the last 30 days
+  const today = new Date();
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(today.getDate() - 30);
 
-const DateFilterComponent = ({ onFilterChange }) => {
-  const [dates, setDates] = useState(null);
-
-  const handleFilter = () => {
-    // Pass the selected dates back to the main page
-    onFilterChange(dates);
-    // TODO: Backend data filtering API
-    // axios.get('/api/crime-stats', { params: { startDate: dates[0], endDate: dates[1] } });
+  const handleDateChange = (newDateRange) => {
+    setDateRange(newDateRange);
+    onDateChange(newDateRange);
   };
 
   return (
-    <div style={{ marginBottom: '20px' }}>
-      <h2>Date Filter</h2>
-      <RangePicker onChange={(dates) => setDates(dates)} />
-      <Button type="primary" onClick={handleFilter} style={{ marginLeft: '10px' }}>
-        Search
-      </Button>
-    </div>
+    <MantineProvider>
+      <div className="fancy-dropdown">
+        <h2>Date Range</h2>
+        <DatePickerInput
+          type="range"
+          placeholder="Pick dates range"
+          value={dateRange}
+          onChange={handleDateChange}
+          minDate={thirtyDaysAgo}
+          maxDate={today}
+          mx="auto"
+          maw={400}
+        />
+      </div>
+    </MantineProvider>
   );
 };
 

@@ -1,35 +1,40 @@
-import React, { useState, useEffect } from 'react';
-import LeafletOpenStreetMapComponent from './LeafletOpenStreetMapComponent';
-import axios from 'axios';
+import React from 'react';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import '../styles/CrimeMap.css';
+import { format } from 'date-fns';
 
-const CrimeMapComponent = () => {
-  const [crimeData, setCrimeData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Create a custom red icon
+const redIcon = new L.Icon({
+  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
-  useEffect(() => {
-    const fetchCrimeData = async () => {
-      try {
-        const response = await axios.get('http://127.0.0.1:8000/crime-data');  // 確認後端URL
-        setCrimeData(response.data);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to fetch crime data');
-        setLoading(false);
-      }
-    };
-
-    fetchCrimeData();
-  }, []);
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
-
+const CrimeMapComponent = ({ crimeData }) => {
   return (
-    <div>
-      <h2>Crime Map</h2>
-      <LeafletOpenStreetMapComponent crimeData={crimeData} />
+    <div className="crime-map-container" style={{ zIndex: 1 }}>
+      <MapContainer center={[38.9072, -77.0369]} zoom={13} style={{ height: '600px', width: '100%', zIndex: 1 }}>
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        />
+        {crimeData.map((crime, index) => (
+          <Marker key={index} position={[crime.lat, crime.lng]} icon={redIcon}>
+            <Popup>
+              <strong>Type:</strong> {crime.type}<br />
+              <strong>Date:</strong> {format(new Date(crime.date), 'MMMM d, yyyy')}<br />
+              <strong>Zone:</strong> {crime.zone}<br />
+              <strong>Shift:</strong> {crime.shift}<br />
+              <strong>Method:</strong> {crime.method}<br />
+              <strong>ID:</strong> {crime.id}
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
     </div>
   );
 };

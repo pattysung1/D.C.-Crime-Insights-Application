@@ -1,17 +1,136 @@
 .filter-container {
-    padding: 5px;
-    background-color: #f9f9f9;
-    border-radius: 10px;
     display: flex;
     justify-content: space-between;
-    gap: 20px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-
+    align-items: flex-start;
+    background-color: #f5f5f5;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
+    position: relative;
+    z-index: 100; /* Increase this value to ensure it's above the map */
 }
 
-.date-filter-section,
-.crime-type-section,
-.crime-zone-section {
+.filter-item {
     flex: 1;
+    margin: 0 10px;
+}
+
+.filter-item:first-child {
+    margin-left: 0;
+}
+
+.filter-item:last-child {
+    margin-right: 0;
+}
+
+.dropdown {
+    width: 100%;
+}
+
+.dropdown h2,
+.date-filter-component h2 {
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #333;
+    font-weight: 600;
+}
+
+.dropdown select,
+.date-picker {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: white;
+    color: #333;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 20px;
+    cursor: pointer;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dropdown select:hover,
+.date-picker:hover {
+    border-color: #888;
+}
+
+.dropdown select:focus,
+.date-picker:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+/* Styles for the DateFilterComponent */
+.date-filter-component {
+    width: 100%;
+}
+
+.date-filter-component h2 {
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.date-picker {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* Additional styles for react-datepicker */
+.react-datepicker-wrapper {
+    width: 100%;
+}
+
+.react-datepicker__input-container {
+    width: 100%;
+}
+
+/* Add any additional styles for your date picker here */
+
+/* Add these new styles for the date picker */
+.react-datepicker-popper {
+    z-index: 1001 !important; /* Ensure the date picker popup is above everything */
+}
+
+.react-datepicker-wrapper,
+.react-datepicker__input-container,
+.react-datepicker__input-container input {
+    display: block;
+    width: 100%;
+}
+
+/* Custom styles for react-datepicker */
+.react-datepicker {
+    font-family: Arial, sans-serif;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.react-datepicker__header {
+    background-color: #f0f0f0;
+    border-bottom: 1px solid #ccc;
+    padding-top: 8px;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--in-selecting-range,
+.react-datepicker__day--in-range {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.react-datepicker__day:hover {
+    background-color: #e6e6e6;
 }

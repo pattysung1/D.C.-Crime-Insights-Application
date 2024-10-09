@@ -1,27 +1,51 @@
 import React from 'react';
+import { MantineProvider } from '@mantine/core';
 import CrimeTypeDropdown from './CrimeTypeDropdown';  // 類別篩選器
 import CrimeZoneDropdown from './CrimeZoneDropdown';  // 區域篩選器
 import DateFilterComponent from './DateFilterComponent';  // 日期篩選器
+import '../../styles/Filter.css';
+import '@mantine/core/styles.css';  // Add this line
 
-const Filter = ({ filters, handleFilterChange }) => {
+const Filter = ({ filters, handleFilterChange, crimeTypes, crimeZones }) => {
+    console.log('Filter props:', { filters, crimeTypes, crimeZones });
+
     const handleCrimeTypeChange = (crimeType) => {
-        handleFilterChange({ crimeType });  // 更新犯罪類型篩選
+        handleFilterChange({ crimeType });
     };
 
     const handleZoneChange = (crimeZone) => {
-        handleFilterChange({ crimeZone });  // 更新區域篩選
+        handleFilterChange({ crimeZone });
     };
 
-    const handleDateChange = (dates) => {
-        handleFilterChange({ dates });  // 更新日期篩選
+    const handleDateChange = (dateRange) => {
+        handleFilterChange({ dates: dateRange });
     };
 
     return (
-        <div className="filter-container">
-            <CrimeTypeDropdown onCrimeTypeChange={handleCrimeTypeChange} />
-            <CrimeZoneDropdown onZoneChange={handleZoneChange} />
-            <DateFilterComponent onDateChange={handleDateChange} />
-        </div>
+        <MantineProvider>
+            <div className="filter-container">
+                <div className="filter-item">
+                    <CrimeTypeDropdown
+                        onCrimeTypeChange={handleCrimeTypeChange}
+                        crimeTypes={crimeTypes}
+                        selectedCrimeType={filters.crimeType}
+                    />
+                </div>
+                <div className="filter-item">
+                    <CrimeZoneDropdown
+                        onZoneChange={handleZoneChange}
+                        crimeZones={crimeZones}
+                        selectedCrimeZone={filters.crimeZone}
+                    />
+                </div>
+                <div className="filter-item">
+                    <DateFilterComponent
+                        onDateChange={handleDateChange}
+                        initialDateRange={filters.dates}
+                    />
+                </div>
+            </div>
+        </MantineProvider>
     );
 };
 
