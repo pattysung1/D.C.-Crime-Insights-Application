@@ -5,6 +5,9 @@ from collections import Counter
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import os
+import mysql.connector
+import plotly.graph_objects as go
+import plotly.io as pio
 
 app = FastAPI()
 
@@ -247,3 +250,52 @@ def get_crime_zones():
                        if feature["attributes"]["WARD"] is not None))
 
     return crime_zones
+
+# Establish MySQL connection (using your existing function)
+def establish_connection():
+    try:
+        conn = mysql.connector.connect(
+            host="database-crime-dc.cxqaw406cjk5.us-east-1.rds.amazonaws.com",
+            user="admin",
+            password="capstonegroup10",
+            port=3306,
+            database="crime_database"
+        )
+        return conn
+    except mysql.connector.Error as err:
+        print("Database connection failed:", err)
+        return None
+
+# API endpoint to fetch total crimes by shift
+@app.get("/crime-prediction")
+def get_crime_prediction_data():
+    conn = establish_connection()
+    if conn is None:
+        return {"error": "Failed to connect to the database."}
+
+    try:
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT shift, COUNT(*) as total_crimes
+            FROM report_time
+            GROUP BY shift
+        """
+        cursor.execute(query)
+        data = cursor.fetchall()  # Fetch all the rows as a list of dictionaries
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+    finally:
+        cursor.close()
+        conn.close()
+
+    # Convert the data into a DataFrame for Plotly
+    df = pd.DataFrame(data)
+
+    # Create a Plotly bar chart
+    fig = go.Figure([go.Bar(x=df['shift'], y=df['total_crimes'])])
+    fig.update_layout(title="Total Crimes by Shift", xaxis_title="Shift", yaxis_title="Total Crimes")
+
+    # Render the figure as an HTML div
+    chart_html = pio.to_html(fig, full_html=False)
+
+    return {"chart": chart_html}
