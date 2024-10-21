@@ -8,6 +8,7 @@ import os
 import mysql.connector
 import plotly.graph_objects as go
 import plotly.io as pio
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
@@ -181,45 +182,67 @@ def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = Non
         return {"error": "Failed to connect to the database."}
 
     try:
+        if not startDate:
+            startDate = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        if not endDate:
+            endDate = datetime.now().strftime("%Y-%m-%d")
+
         cursor = conn.cursor(dictionary=True)
 
-        # Base query
+        # Base query to join all necessary tables
         query = """
-            SELECT offense, ward, shift, report_date_time, method, latitude, longitude
-            FROM report_time rt
-            JOIN offense_and_method om ON rt.ccn = om.ccn
-            JOIN report_location rl ON rt.ccn = rl.ccn
-            WHERE 1=1
+        SELECT rt.ccn, rt.report_date_time AS crime_date, rt.shift, rl.latitude, rl.longitude, rl.ward AS crime_zone, 
+               om.offense AS crime_type, om.method
+        FROM report_time rt
+        JOIN report_location rl ON rt.ccn = rl.ccn
+        JOIN offense_and_method om ON rt.ccn = om.ccn
+        WHERE 1 = 1
         """
-        
-        # Parameters for query
+
+        # Parameters for filtering
         params = []
 
-        # Add filters to the query dynamically
+        # Filter by crime type
         if crimeType and crimeType != "All Crimes":
             query += " AND om.offense = %s"
             params.append(crimeType)
 
+        # Filter by zone
         if zone and zone != "All Zones":
             query += " AND rl.ward = %s"
             params.append(zone)
 
-        if startDate and endDate:
-            query += " AND rt.report_date_time BETWEEN %s AND %s"
-            params.append(startDate)
-            params.append(endDate)
+        # Filter by date range (default or provided)
+        query += " AND rt.report_date_time BETWEEN %s AND %s"
+        params.extend([startDate, endDate])
 
-        # Execute the query with parameters
+        # Execute the query with the filters applied
         cursor.execute(query, params)
-        features = cursor.fetchall()
+        result = cursor.fetchall()
 
-        return features
+       # Format the result
+        filtered_data = []
+        for idx, row in enumerate(result):
+            crime_date_obj = pd.to_datetime(row['crime_date'])  # Parse date
+            filtered_data.append({
+                "id": idx,
+                "lat": row['latitude'],
+                "lng": row['longitude'],
+                "type": row['crime_type'],
+                "shift": row['shift'],
+                "zone": row['crime_zone'],
+                "date": crime_date_obj.strftime("%Y-%m-%d %H:%M:%S"),
+                "method": row['method']
+            })
+
+        return filtered_data
 
     except mysql.connector.Error as err:
         return {"error": str(err)}
     finally:
         cursor.close()
         conn.close()
+
 
 @app.get("/crime-types")
 def get_crime_types():

@@ -5,6 +5,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 from collections import Counter
+from datetime import datetime, timedelta
 
 # Creating the connection
 def establish_connection():
@@ -199,95 +200,3 @@ def testing_database():
 # populate_tables()
 # delete_from_all_tables()
 # testing_database()
-
-crime_category_mapping = {
-    "theft/other": "theft (non auto)",
-    "theft f/auto": "theft auto",
-    "assault w/dangerous weapon": "assault with weapon",
-    "homicide": "homicide",
-    "motor vehicle theft": "motor vehicle theft",
-    "burglary": "burglary",
-    "robbery": "robbery",
-    "sex abuse": "sex abuse",
-    "arson": "arson",
-}
-
-def analyze_data():
-
-    conn = establish_connection()
-    if conn is None:
-        return {"error": "Failed to connect to the database."}
-
-    try:
-        cursor = conn.cursor(dictionary=True)
-
-        # Query the last 30 days' data from the database
-        query = """
-            SELECT om.offense, rl.ward, om.method, rt.shift
-            FROM report_time rt
-            JOIN offense_and_method om ON rt.ccn = om.ccn
-            JOIN report_location rl ON rt.ccn = rl.ccn
-            WHERE rt.report_date_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY);
-        """
-        cursor.execute(query)
-        features = cursor.fetchall()
-
-        if not features:
-            return {"message": "No data available for the last 30 days"}
-
-        # Calculate total crime count
-        total_crimes = len(features)
-
-        # Calculate count by offense type
-        offense_counter = Counter(feature["offense"] for feature in features)
-
-        # Determine top crime type
-        top_crime_type = offense_counter.most_common(1)[0] if offense_counter else ("N/A", 0)
-
-        # Calculate count by ward (High Crime Zone)
-        ward_counter = Counter(feature["ward"] for feature in features)
-        high_crime_zone = ward_counter.most_common(1)[0] if ward_counter else ("N/A", 0)
-
-        # Calculate count by method of crime
-        method_counter = Counter(feature["method"] for feature in features)
-        top_method = method_counter.most_common(1)[0] if method_counter else ("N/A", 0)
-
-        # Calculate count by shift (time of crime)
-        shift_counter = Counter(feature["shift"] for feature in features)
-        top_shift = shift_counter.most_common(1)[0] if shift_counter else ("N/A", 0)
-
-        # Calculate distribution data for the last 30 days
-        distribution_data = {category: 0 for category in crime_category_mapping.values()}
-        for feature in features:
-            category = crime_category_mapping.get(feature["offense"])
-            if category:
-                distribution_data[category] += 1
-            else:
-                # Add a "miscellaneous" category if the offense isn't mapped
-                distribution_data["miscellaneous"] = distribution_data.get("miscellaneous", 0) + 1
-
-        return {
-            "dashboard": {
-                "overview": {
-                    "total_crimes": total_crimes,
-                    "top_crime_type": top_crime_type[0],
-                    "top_crime_count": top_crime_type[1],
-                    "high_crime_zone": high_crime_zone[0],
-                    "high_crime_count": high_crime_zone[1],
-                    "top_method": top_method[0],
-                    "top_method_count": top_method[1],
-                    "top_shift": top_shift[0],
-                    "top_shift_count": top_shift[1]
-                },
-                "distribution": distribution_data
-            }
-        }
-
-    except mysql.connector.Error as err:
-        return {"error": str(err)}
-    finally:
-        cursor.close()
-        conn.close()
-
-print("hello")
-print(analyze_data())
