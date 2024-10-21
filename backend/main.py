@@ -51,36 +51,87 @@ crime_category_mapping = {
 
 # Calculate trends data from CSV files
 def calculate_trends():
+
+    conn = establish_connection()
+    if conn is None:
+        return {"error": "Failed to connect to the database."}
+    
     trends_data = []
+    try:
+        cursor = conn.cursor(dictionary=True)
 
-    # Load each CSV file and aggregate the data by crime type
-    for year, file_path in csv_files.items():
-        df = pd.read_csv(file_path)
+        # Crime counts grouped by offense and year
+        for year in range(2019, 2025):  # Data from 2019-2024
+            query = f"""
+                SELECT offense, COUNT(*) as count
+                FROM report_time rt
+                JOIN offense_and_method om ON rt.ccn = om.ccn
+                WHERE YEAR(rt.report_date_time) = {year}
+                GROUP BY offense;
+            """
+            cursor.execute(query)
+            results = cursor.fetchall()
 
-        # Initialize a summary for each year
-        crime_summary = {
-            "date": year,
-            "theft": 0,
-            "assault": 0,
-            "vandalism": 0,
-            "burglary": 0,
-            "drugs": 0,
-            "arson": 0,
-            "homicide": 0,
-            "robbery": 0,
-            "sex_abuse": 0
-        }
+            # Initialize a summary for each year
+            crime_summary = {
+                "date": year,
+            }
 
-        # Aggregate counts based on the offense type
-        for offense, category in crime_category_mapping.items():
-            crime_summary[category] += df[df['OFFENSE'] == offense].shape[0]
+            # Map the offenses to broader categories
+            for row in results:
+                if row['offense'] == 'theft/other':
+                    crime_summary['theft (non_auto)'] = row['count']
+                if row['offense'] == 'theft f/auto':
+                    crime_summary['theft (auto)'] = row['count']
+                if row['offense'] == 'assault w/dangerous weapon':
+                    crime_summary['assault with weapon'] = row['count']
+                else:
+                    crime_summary[row['offense']] = row['count']
+                
 
-        trends_data.append(crime_summary)
+            trends_data.append(crime_summary)
+
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+    finally:
+        cursor.close()
+        conn.close()
 
     # Sort trends data by year in ascending order
     trends_data.sort(key=lambda x: x['date'])
 
     return trends_data
+
+    # trends_data = []
+
+    # # Load each CSV file and aggregate the data by crime type
+    # for year, file_path in csv_files.items():
+    #     df = pd.read_csv(file_path)
+
+    #     # Initialize a summary for each year
+    #     crime_summary = {
+    #         "date": year,
+    #         "theft": 0,
+    #         "assault": 0,
+    #         "vandalism": 0,
+    #         "burglary": 0,
+    #         "drugs": 0,
+    #         "arson": 0,
+    #         "homicide": 0,
+    #         "robbery": 0,
+    #         "sex_abuse": 0
+    #     }
+
+    #     # Aggregate counts based on the offense type
+    #     for offense, category in crime_category_mapping.items():
+    #         crime_summary[category] += df[df['OFFENSE'] == offense].shape[0]
+
+    #     trends_data.append(crime_summary)
+
+    # # Sort trends data by year in ascending order
+    # trends_data.sort(key=lambda x: x['date'])
+
+    # return trends_data
 
 # Endpoint to fetch and save the last 30 days' data
 @app.get("/")

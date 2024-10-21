@@ -183,7 +183,13 @@ def testing_database():
     if conn != None:
         cursor = conn.cursor()
 
-        cursor.execute("select * from report_time where ccn = 24070106")
+        cursor.execute(f"""
+                SELECT offense, COUNT(*) as count
+                FROM report_time rt
+                JOIN offense_and_method om ON rt.ccn = om.ccn
+                WHERE YEAR(rt.report_date_time) = 2021
+                GROUP BY offense;
+            """)
 
         print(cursor.fetchall())
 
@@ -194,4 +200,4 @@ def testing_database():
 # create_tables()
 # populate_tables()
 # delete_from_all_tables()
-# testing_database()
+testing_database()
