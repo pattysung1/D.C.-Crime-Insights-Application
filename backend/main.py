@@ -12,9 +12,6 @@ from datetime import datetime, timedelta
 
 app = FastAPI()
 
-DATA_LAST30_URL = "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/MapServer/8/query?where=1%3D1&outFields=*&outSR=4326&f=json"
-LOCAL_LAST30_FILE = "crime_data_last30.json"
-
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
