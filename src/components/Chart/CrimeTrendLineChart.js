@@ -28,7 +28,7 @@ const CrimeTrendsChart = ({ crimeData }) => {
           {/* Lines for each crime category */}
           <Line
             type="monotone"
-            dataKey="theft (non_auto)"
+            dataKey="theft (non auto)"
             stroke="#8884d8"
             activeDot={{ r: 8 }}
           />
