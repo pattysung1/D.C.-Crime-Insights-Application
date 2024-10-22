@@ -1,6 +1,6 @@
 import httpx
 import json
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from collections import Counter
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -8,6 +8,9 @@ import os
 import mysql.connector
 import plotly.graph_objects as go
 import plotly.io as pio
+import reports
+from typing import List
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -299,3 +302,183 @@ def get_crime_prediction_data():
     chart_html = pio.to_html(fig, full_html=False)
 
     return {"chart": chart_html}
+
+class CrimeReport(BaseModel):
+    ccn: str  # Ensure CCN is a string
+    REPORT_DAT: str  # Ensure REPORT_DAT is a string
+    SHIFT: str
+    offense: str
+    method: str
+    ward: str  # Ensure ward is a string
+    neighborhood_clusters: str
+
+
+def load_data_from_db():
+    mydb = establish_connection()
+    if mydb is None:
+        return None
+
+    try:
+        # Join the three tables using the ccn column to fetch comprehensive crime data
+        query = """
+            SELECT 
+                r.ccn, 
+                r.report_date_time AS REPORT_DAT, 
+                r.shift AS SHIFT, 
+                l.ward, 
+                l.neighborhood_clusters, 
+                o.offense AS offense, 
+                o.method AS method, 
+                o.offense_group AS offense_group, 
+                o.ucr_rank AS ucr_rank, 
+                l.longitude, 
+                l.latitude
+            FROM 
+                report_time r
+            INNER JOIN 
+                report_location l ON r.ccn = l.ccn
+            INNER JOIN 
+                offense_and_method o ON r.ccn = o.ccn;
+        """
+        # Fetch the data into a DataFrame
+        df = pd.read_sql(query, mydb)
+
+        # Ensure the REPORT_DAT field is in datetime format for filtering
+        df['REPORT_DAT'] = pd.to_datetime(df['REPORT_DAT'], errors='coerce')
+
+        # Check if 'REPORT_DAT' is timezone-aware or not and localize/convert accordingly
+        if df['REPORT_DAT'].dt.tz is None:
+            df['REPORT_DAT'] = df['REPORT_DAT'].dt.tz_localize('UTC')
+        else:
+            df['REPORT_DAT'] = df['REPORT_DAT'].dt.tz_convert('UTC')
+
+        return df
+    except Exception as e:
+        print(f"Failed to load data from database: {str(e)}")
+        return None
+    finally:
+        mydb.close()
+
+# Endpoint to get crime report data based on date and location
+# @app.get("/report", response_model=List[dict])  # Assuming the response model is a list of dictionaries
+# def get_report(start_date: str, end_date: str, location: str):
+#     # Load data from the database
+#     df = load_data_from_db()
+#     if df is None:
+#         return {"error": "Failed to load data from the database."}
+
+#     # Filter the DataFrame based on provided parameters
+#     filtered_data = df[
+#         (df['REPORT_DAT'] >= pd.to_datetime(start_date)) &
+#         (df['REPORT_DAT'] <= pd.to_datetime(end_date)) &
+#         (df['neighborhood_clusters'] == location)
+#     ]
+
+#     if filtered_data.empty:
+#         return {"error": "No data available for the specified filters."}
+
+#     return filtered_data.to_dict(orient='records')  # Return the filtered data as a list of dictionaries
+
+# @app.get("/report", response_model=List[CrimeReport])
+# def get_report(start_date: str, end_date: str, location: str):
+#     # Load data from the database
+#     df = load_data_from_db()
+#     if df is None:
+#         return []  # Return an empty list instead of an error message
+
+#     # Convert start_date and end_date to timezone-aware UTC datetimes
+#     try:
+#         start_date_utc = pd.to_datetime(start_date).tz_localize('UTC')
+#         end_date_utc = pd.to_datetime(end_date).tz_localize('UTC')
+#     except Exception as e:
+#         return []  # Return an empty list if date parsing fails
+
+#     # Filter the DataFrame based on provided parameters
+#     filtered_data = df[
+#         (df['REPORT_DAT'] >= start_date_utc) &
+#         (df['REPORT_DAT'] <= end_date_utc) &
+#         (df['neighborhood_clusters'] == location)
+#     ]
+
+#     if filtered_data.empty:
+#         return []  # Return an empty list if no data is found
+
+#     return filtered_data.to_dict(orient='records')  # Return the filtered data as a list of dictionaries
+
+# @app.get("/report", response_model=List[CrimeReport])
+# def get_report(start_date: str, end_date: str, location: str):
+#     # Load data from the database
+#     df = load_data_from_db()
+#     if df is None:
+#         return {"error": "Failed to load data from the database."}
+
+#     # Convert start_date and end_date to UTC
+#     start_date = pd.to_datetime(start_date).tz_localize('UTC')
+#     end_date = pd.to_datetime(end_date).tz_localize('UTC')
+
+#     # Filter the DataFrame based on provided parameters
+#     filtered_data = df[
+#         (df['REPORT_DAT'] >= start_date) &
+#         (df['REPORT_DAT'] <= end_date) &
+#         (df['neighborhood_clusters'] == location)
+#     ]
+
+#     if filtered_data.empty:
+#         return {"error": "No data available for the specified filters."}
+
+#     # Convert fields to string before returning
+#     result = filtered_data.to_dict(orient='records')
+#     for row in result:
+#         row['ccn'] = str(row['ccn'])  # Convert CCN to string
+#         row['REPORT_DAT'] = row['REPORT_DAT'].strftime('%Y-%m-%d %H:%M:%S')  # Convert datetime to string
+#         row['ward'] = str(row['ward'])  # Convert ward to string
+
+#     return result  # Return the filtered data as a list of dictionaries
+
+@app.get("/report", response_model=List[CrimeReport])
+def get_report(start_date: str, end_date: str, location: str):
+    # Load data from the database
+    df = load_data_from_db()
+    if df is None:
+        return []  # Return an empty list instead of an error dictionary
+
+    # Convert start_date and end_date to UTC
+    start_date = pd.to_datetime(start_date).tz_localize('UTC')
+    end_date = pd.to_datetime(end_date).tz_localize('UTC')
+
+    # Filter the DataFrame based on provided parameters
+    filtered_data = df[
+        (df['REPORT_DAT'] >= start_date) &
+        (df['REPORT_DAT'] <= end_date) &
+        (df['neighborhood_clusters'].str.lower() == location.lower())  # Make case insensitive
+    ]
+
+    if filtered_data.empty:
+        return []  # Return an empty list if no data is found
+
+    # Convert fields to string before returning
+    result = filtered_data.to_dict(orient='records')
+    for row in result:
+        row['ccn'] = str(row['ccn'])  # Convert CCN to string
+        row['REPORT_DAT'] = row['REPORT_DAT'].strftime('%Y-%m-%d %H:%M:%S')  # Convert datetime to string
+        row['ward'] = str(row['ward'])  # Convert ward to string
+
+    return result  # Return the filtered data as a list of dictionaries
+
+
+
+# Function to load neighborhood clusters from the DataFrame
+@app.get("/neighborhood_clusters")
+def get_neighborhood_clusters():
+    df = load_data_from_db()  # Load data into DataFrame
+    if df is None:
+        return {"error": "Failed to load data from the database."}
+
+    # Filter out None or empty values from neighborhood_clusters before sorting
+    valid_clusters = [cluster for cluster in df['neighborhood_clusters'].unique() if isinstance(cluster, str) and cluster.strip()]
+    sorted_clusters = sorted(valid_clusters)  # Sort clusters alphabetically
+
+    return sorted_clusters  # Return the sorted list of neighborhoods
+
+
+
