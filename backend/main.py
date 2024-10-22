@@ -8,11 +8,9 @@ import os
 import mysql.connector
 import plotly.graph_objects as go
 import plotly.io as pio
+from datetime import datetime, timedelta
 
 app = FastAPI()
-
-DATA_LAST30_URL = "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/MapServer/8/query?where=1%3D1&outFields=*&outSR=4326&f=json"
-LOCAL_LAST30_FILE = "crime_data_last30.json"
 
 # CORS setup
 app.add_middleware(
@@ -23,233 +21,283 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-# List of crime CSV files and their respective years
-csv_files = {
-    "2024": "./Crime_Incidents/Crime_Incidents_in_2024.csv",
-    "2023": "./Crime_Incidents/Crime_Incidents_in_2023.csv",
-    "2022": "./Crime_Incidents/Crime_Incidents_in_2022.csv",
-    "2021": "./Crime_Incidents/Crime_Incidents_in_2021.csv",
-    "2020": "./Crime_Incidents/Crime_Incidents_in_2020.csv",
-    "2019": "./Crime_Incidents/Crime_Incidents_in_2019.csv",
-}
-
 # Mapping for offense types to broader categories
 crime_category_mapping = {
-    "THEFT/OTHER": "theft",
-    "THEFT F/AUTO": "theft",
-    "ASSAULT W/DANGEROUS WEAPON": "assault",
-    "SIMPLE ASSAULT": "assault",
-    "VANDALISM": "vandalism",
-    "BURGLARY": "burglary",
-    "MOTOR VEHICLE THEFT": "burglary",
-    "DRUG/NARCOTIC VIOLATION": "drugs",
-    "ARSON": "arson",
-    "HOMICIDE": "homicide",
-    "ROBBERY": "robbery",
-    "SEX ABUSE": "sex_abuse"
+    "theft/other": "theft (non auto)",
+    "theft f/auto": "theft auto",
+    "assault w/dangerous weapon": "assault with weapon",
+    "homicide": "homicide",
+    "motor vehicle theft": "motor vehicle theft",
+    "burglary": "burglary",
+    "robbery": "robbery",
+    "sex abuse": "sex abuse",
+    "arson": "arson",
 }
 
 # Calculate trends data from CSV files
 def calculate_trends():
+
+    conn = establish_connection()
+    if conn is None:
+        return {"error": "Failed to connect to the database."}
+    
     trends_data = []
+    try:
+        cursor = conn.cursor(dictionary=True)
 
-    # Load each CSV file and aggregate the data by crime type
-    for year, file_path in csv_files.items():
-        df = pd.read_csv(file_path)
+        # Crime counts grouped by offense and year
+        for year in range(2019, 2025):  # Data from 2019-2024
+            query = f"""
+                SELECT offense, COUNT(*) as count
+                FROM report_time rt
+                JOIN offense_and_method om ON rt.ccn = om.ccn
+                WHERE YEAR(rt.report_date_time) = {year}
+                GROUP BY offense;
+            """
+            cursor.execute(query)
+            results = cursor.fetchall()
 
-        # Initialize a summary for each year
-        crime_summary = {
-            "date": year,
-            "theft": 0,
-            "assault": 0,
-            "vandalism": 0,
-            "burglary": 0,
-            "drugs": 0,
-            "arson": 0,
-            "homicide": 0,
-            "robbery": 0,
-            "sex_abuse": 0
-        }
+            # Initialize a summary for each year
+            crime_summary = {
+                "date": year,
+            }
 
-        # Aggregate counts based on the offense type
-        for offense, category in crime_category_mapping.items():
-            crime_summary[category] += df[df['OFFENSE'] == offense].shape[0]
+            # Map the offenses to broader categories
+            for row in results:
+                if row['offense'] == 'theft/other':
+                    crime_summary['theft (non auto)'] = row['count']
+                if row['offense'] == 'theft f/auto':
+                    crime_summary['theft (auto)'] = row['count']
+                if row['offense'] == 'assault w/dangerous weapon':
+                    crime_summary['assault with weapon'] = row['count']
+                else:
+                    crime_summary[row['offense']] = row['count']
+                
 
-        trends_data.append(crime_summary)
+            trends_data.append(crime_summary)
+
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+    finally:
+        cursor.close()
+        conn.close()
 
     # Sort trends data by year in ascending order
     trends_data.sort(key=lambda x: x['date'])
 
     return trends_data
 
-# Endpoint to fetch and save the last 30 days' data
-@app.get("/")
-async def fetch_last30_data():
-    async with httpx.AsyncClient() as client:
-        response = await client.get(DATA_LAST30_URL)
-        if response.status_code == 200:
-            data = response.json()
-            # Save data to a local JSON file
-            with open(LOCAL_LAST30_FILE, "w") as file:
-                json.dump(data, file)
-            return {"message": "Data fetched and stored successfully."}
-        else:
-            return {"error": "Failed to fetch data", "status_code": response.status_code}
 
 # Calculate crime data for dashboard
 @app.get("/dashboard")
 def analyze_data():
-    if not os.path.exists(LOCAL_LAST30_FILE):
-        return {"error": "Data file not found. Please fetch data first."}
 
-    with open(LOCAL_LAST30_FILE, "r") as file:
-        data = json.load(file)
+    conn = establish_connection()
+    if conn is None:
+        return {"error": "Failed to connect to the database."}
 
-    # Extract features containing crime information
-    features = data.get("features", [])
+    try:
+        cursor = conn.cursor(dictionary=True)
 
-    # Calculate total crime count
-    total_crimes = len(features)
+        # Query the last 30 days' data from the database
+        query = """
+            SELECT om.offense, rl.ward, om.method, rt.shift
+            FROM report_time rt
+            JOIN offense_and_method om ON rt.ccn = om.ccn
+            JOIN report_location rl ON rt.ccn = rl.ccn
+            WHERE rt.report_date_time >= DATE_SUB(CURDATE(), INTERVAL 30 DAY);
+        """
+        cursor.execute(query)
+        features = cursor.fetchall()
 
-    # Calculate count by offense type
-    offense_counter = Counter(
-        feature["attributes"]["OFFENSE"] for feature in features)
+        if not features:
+            return {"message": "No data available for the last 30 days"}
 
-    # Determine top crime type
-    top_crime_type = offense_counter.most_common(
-        1)[0] if offense_counter else ("N/A", 0)
+        # Calculate total crime count
+        total_crimes = len(features)
 
-    # Calculate count by ward (High Crime Zone)
-    ward_counter = Counter(feature["attributes"]["WARD"]
-                           for feature in features)
-    high_crime_zone = ward_counter.most_common(
-        1)[0] if ward_counter else ("N/A", 0)
+        # Calculate count by offense type
+        offense_counter = Counter(feature["offense"] for feature in features)
 
-    # Calculate count by method of crime
-    method_counter = Counter(feature["attributes"]["METHOD"]
-                             for feature in features)
-    top_method = method_counter.most_common(
-        1)[0] if method_counter else ("N/A", 0)
+        # Determine top crime type
+        top_crime_type = offense_counter.most_common(1)[0] if offense_counter else ("N/A", 0)
 
-    # Calculate count by shift (time of crime)
-    shift_counter = Counter(feature["attributes"]["SHIFT"]
-                            for feature in features)
-    top_shift = shift_counter.most_common(
-        1)[0] if shift_counter else ("N/A", 0)
+        # Calculate count by ward (High Crime Zone)
+        ward_counter = Counter(feature["ward"] for feature in features)
+        high_crime_zone = ward_counter.most_common(1)[0] if ward_counter else ("N/A", 0)
 
-    # Generate trends data from CSV files
-    trends_data = calculate_trends()
+        # Calculate count by method of crime
+        method_counter = Counter(feature["method"] for feature in features)
+        top_method = method_counter.most_common(1)[0] if method_counter else ("N/A", 0)
 
-    # Calculate distribution data for the last 30 days
-    distribution_data = {
-        category: 0 for category in crime_category_mapping.values()}
-    for feature in features:
-        offense = feature["attributes"]["OFFENSE"]
-        category = crime_category_mapping.get(offense)
-        if category:
-            distribution_data[category] += 1
+        # Calculate count by shift (time of crime)
+        shift_counter = Counter(feature["shift"] for feature in features)
+        top_shift = shift_counter.most_common(1)[0] if shift_counter else ("N/A", 0)
 
-    return {
-        "dashboard": {
-            "overview": {
-                "total_crimes": total_crimes,
-                "top_crime_type": top_crime_type[0],
-                "top_crime_count": top_crime_type[1],
-                "high_crime_zone": high_crime_zone[0],
-                "high_crime_count": high_crime_zone[1],
-                "top_method": top_method[0],
-                "top_method_count": top_method[1],
-                "top_shift": top_shift[0],
-                "top_shift_count": top_shift[1]
-            },
-            "trends": trends_data,
-            "distribution": distribution_data
+        # Generate trends data from the MySQL database
+        trends_data = calculate_trends()
+
+        # Calculate distribution data for the last 30 days
+        distribution_data = {category: 0 for category in crime_category_mapping.values()}
+        for feature in features:
+            category = crime_category_mapping.get(feature["offense"])
+            if category:
+                distribution_data[category] += 1
+            else:
+                # Add a "miscellaneous" category if the offense isn't mapped
+                distribution_data["miscellaneous"] = distribution_data.get("miscellaneous", 0) + 1
+
+        return {
+            "dashboard": {
+                "overview": {
+                    "total_crimes": total_crimes,
+                    "top_crime_type": top_crime_type[0],
+                    "top_crime_count": top_crime_type[1],
+                    "high_crime_zone": high_crime_zone[0],
+                    "high_crime_count": high_crime_zone[1],
+                    "top_method": top_method[0],
+                    "top_method_count": top_method[1],
+                    "top_shift": top_shift[0],
+                    "top_shift_count": top_shift[1]
+                },
+                "trends": trends_data,
+                "distribution": distribution_data
+            }
         }
-    }
+
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+    finally:
+        cursor.close()
+        conn.close()
+
 
 @app.get("/crime-data")
 def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = None, endDate: str = None):
-    if not os.path.exists(LOCAL_LAST30_FILE):
-        return {"error": "Data file not found. Please fetch data first."}
+    conn = establish_connection()
+    if conn is None:
+        return {"error": "Failed to connect to the database."}
 
-    with open(LOCAL_LAST30_FILE, "r") as file:
-        data = json.load(file)
+    try:
+        if not startDate:
+            startDate = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+        if not endDate:
+            endDate = datetime.now().strftime("%Y-%m-%d")
 
-    features = data.get("features", [])
+        cursor = conn.cursor(dictionary=True)
 
-    # Filter data
-    filtered_data = []
-    for idx, feature in enumerate(features):
-        attributes = feature.get("attributes", {})
-        lat = attributes.get("LATITUDE")
-        lng = attributes.get("LONGITUDE")
-        crime_type = attributes.get("OFFENSE")
-        shift = attributes.get("SHIFT")
-        crime_zone = attributes.get("WARD")  # Assuming "WARD" represents the zone
-        crime_date = attributes.get("REPORT_DAT")
-        method = attributes.get("METHOD")  # Extract the method of crime
+        # Base query to join all necessary tables
+        query = """
+        SELECT rt.ccn, rt.report_date_time AS crime_date, rt.shift, rl.latitude, rl.longitude, rl.ward AS crime_zone, 
+               om.offense AS crime_type, om.method
+        FROM report_time rt
+        JOIN report_location rl ON rt.ccn = rl.ccn
+        JOIN offense_and_method om ON rt.ccn = om.ccn
+        WHERE 1 = 1
+        """
+
+        # Parameters for filtering
+        params = []
 
         # Filter by crime type
-        if crimeType and crimeType != "All Crimes" and crime_type != crimeType:
-            continue
+        if crimeType and crimeType != "All Crimes":
+            query += " AND om.offense = %s"
+            params.append(crimeType)
 
         # Filter by zone
-        if zone and zone != "All Zones" and crime_zone != zone:
-            continue
+        if zone and zone != "All Zones":
+            query += " AND rl.ward = %s"
+            params.append(zone)
 
-        # Filter by date
-        if startDate and endDate:
-            try:
-                crime_date_obj = pd.to_datetime(
-                    crime_date)  # Convert date to DateTime format
-                if not (pd.to_datetime(startDate) <= crime_date_obj <= pd.to_datetime(endDate)):
-                    continue
-            except Exception as e:
-                print(f"Error parsing date for feature {idx}: {e}")
-                continue
+        # Filter by date range (default or provided)
+        query += " AND rt.report_date_time BETWEEN %s AND %s"
+        params.extend([startDate, endDate])
 
-        # Add filtered data to the list
-        filtered_data.append({
-            "id": idx,
-            "lat": lat,
-            "lng": lng,
-            "type": crime_type,
-            "shift": shift,
-            "zone": crime_zone,
-            "date": crime_date,
-            "method": method  # Include the method in the response
-        })
+        # Execute the query with the filters applied
+        cursor.execute(query, params)
+        result = cursor.fetchall()
 
-    return filtered_data
+       # Format the result
+        filtered_data = []
+        for idx, row in enumerate(result):
+            crime_date_obj = pd.to_datetime(row['crime_date'])  # Parse date
+            filtered_data.append({
+                "id": idx,
+                "lat": row['latitude'],
+                "lng": row['longitude'],
+                "type": row['crime_type'],
+                "shift": row['shift'],
+                "zone": row['crime_zone'],
+                "date": crime_date_obj.strftime("%Y-%m-%d %H:%M:%S"),
+                "method": row['method']
+            })
+
+        return filtered_data
+
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+    finally:
+        cursor.close()
+        conn.close()
+
 
 @app.get("/crime-types")
 def get_crime_types():
-    if not os.path.exists(LOCAL_LAST30_FILE):
-        return {"error": "Data file not found. Please fetch data first."}
+    conn = establish_connection()
+    if conn is None:
+        return {"error": "Failed to connect to the database."}
 
-    with open(LOCAL_LAST30_FILE, "r") as file:
-        data = json.load(file)
+    try:
+        cursor = conn.cursor(dictionary=True)
 
-    # Get all unique crime types (OFFENSE field)
-    crime_types = list(set(feature["attributes"]["OFFENSE"]
-                       for feature in data.get("features", [])))
+        # Query to get all unique crime types (offenses)
+        query = """
+            SELECT DISTINCT offense
+            FROM offense_and_method
+            WHERE offense IS NOT NULL;
+        """
+        cursor.execute(query)
+        types = cursor.fetchall()
 
-    return crime_types
+        # Extract offenses into a list
+        crime_types = [type_['offense'] for type_ in types]
+
+        return crime_types
+
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+    finally:
+        cursor.close()
+        conn.close()
 
 @app.get("/crime-zones")
 def get_crime_zones():
-    if not os.path.exists(LOCAL_LAST30_FILE):
-        return {"error": "Data file not found. Please fetch data first."}
+    conn = establish_connection()
+    if conn is None:
+        return {"error": "Failed to connect to the database."}
 
-    with open(LOCAL_LAST30_FILE, "r") as file:
-        data = json.load(file)
+    try:
+        cursor = conn.cursor(dictionary=True)
 
-    # Get all unique crime zones (WARD field), excluding null values
-    crime_zones = list(set(feature["attributes"]["WARD"]
-                       for feature in data.get("features", [])
-                       if feature["attributes"]["WARD"] is not None))
+        # Query to get all unique crime zones (wards)
+        query = """
+            SELECT DISTINCT ward
+            FROM report_location
+            WHERE ward IS NOT NULL;
+        """
+        cursor.execute(query)
+        zones = cursor.fetchall()
 
-    return crime_zones
+        # Extract wards into a list
+        crime_zones = [zone['ward'] for zone in zones]
+
+        return crime_zones
+
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+    finally:
+        cursor.close()
+        conn.close()
 
 # Establish MySQL connection (using your existing function)
 def establish_connection():

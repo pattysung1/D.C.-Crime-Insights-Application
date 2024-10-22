@@ -4,6 +4,8 @@ import mysql.connector
 from datetime import datetime
 import pandas as pd
 import numpy as np
+from collections import Counter
+from datetime import datetime, timedelta
 
 # Creating the connection
 def establish_connection():
@@ -183,12 +185,15 @@ def testing_database():
     if conn != None:
         cursor = conn.cursor()
 
-        cursor.execute("select * from report_time where ccn = 24070106")
+        cursor.execute(f"""
+                SELECT offense, COUNT(*) as count
+                FROM report_time rt
+                JOIN offense_and_method om ON rt.ccn = om.ccn
+                WHERE YEAR(rt.report_date_time) = 2021
+                GROUP BY offense;
+            """)
 
         print(cursor.fetchall())
-
-
-
 
 '''Function calls'''
 # create_tables()
