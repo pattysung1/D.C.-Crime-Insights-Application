@@ -16,6 +16,18 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
+from fastapi import FastAPI, Request
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
+import mysql.connector
+from langchain_community.utilities import SQLDatabase
+from langchain_core.output_parsers import StrOutputParser
+
+
+
 app = FastAPI()
 
 DATA_LAST30_URL = "https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/MapServer/8/query?where=1%3D1&outFields=*&outSR=4326&f=json"
@@ -608,3 +620,100 @@ def generate_report(name: str, start_date: str, end_date: str, location: str):
     file_path = f"./generated_reports/{name}_crime_report.pdf"
     pdfkit.from_string(report_html, file_path)
     return {"message": "Report generated successfully", "file_path": file_path}
+
+
+
+
+
+# for ChatBot
+# 定義一個類來接收用戶消息
+class ChatRequest(BaseModel):
+    message: str
+
+OPENAI_API_KEY = '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'
+
+# 初始化數據庫連接
+def init_database():
+    user = "admin"
+    password = "capstonegroup10"
+    host = "database-crime-dc.cxqaw406cjk5.us-east-1.rds.amazonaws.com"
+    port = 3306
+    database = "crime_database"
+    
+    db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
+    return SQLDatabase.from_uri(db_uri)
+
+# 定義 AI 回答邏輯
+def get_sql_chain(db):
+    template = """
+    You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
+    Based on the table schema below, write a SQL query that would answer the user's question. Take the conversation history into account.
+    
+    <SCHEMA>{schema}</SCHEMA>
+    
+    Conversation History: {chat_history}
+    
+    Write only the SQL query and nothing else. Do not wrap the SQL query in any other text, not even backticks.
+    
+    Question: {question}
+    SQL Query:
+    """
+    prompt = ChatPromptTemplate.from_template(template)
+    # llm = ChatOpenAI(model="gpt-4-0125-preview")
+    llm = ChatOpenAI(model="gpt-4-0125-preview", openai_api_key=OPENAI_API_KEY)
+
+    def get_schema(_):
+        return db.get_table_info()
+  
+    return (
+        RunnablePassthrough.assign(schema=get_schema)
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+
+@app.post("/chatbot")
+async def chatbot(request: ChatRequest):
+    user_message = request.message
+
+    # 連接到 MySQL 數據庫
+    db = init_database()
+
+    # 建立回應邏輯
+    response = get_response(user_message, db, [])
+    
+    return {"response": response}
+    
+def get_response(user_query: str, db: SQLDatabase, chat_history: list):
+    sql_chain = get_sql_chain(db)
+
+    template = """
+    You are a crime analyst. You are interacting with a user who is asking you questions about the company's crime database.
+    Based on the table schema below, user question, SQL query, and SQL response, write a natural language response that clearly explains the results of the query, including any patterns, trends, or significant insights from the data.
+    <SCHEMA>{schema}</SCHEMA>
+
+    Conversation History: {chat_history}
+    SQL Query: <SQL>{query}</SQL>
+    User question: {question}
+    SQL Response: {response}"""
+  
+    prompt = ChatPromptTemplate.from_template(template)
+    
+    # 这里传入 API Key
+    llm = ChatOpenAI(model="gpt-4-0125-preview", openai_api_key=OPENAI_API_KEY)
+  
+    chain = (
+        RunnablePassthrough.assign(query=sql_chain).assign(
+          schema=lambda _: db.get_table_info(),
+          response=lambda vars: db.run(vars["query"]),
+        )
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+  
+    return chain.invoke({
+        "question": user_query,
+        "chat_history": chat_history,
+    })
+
