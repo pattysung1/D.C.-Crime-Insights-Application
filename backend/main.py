@@ -40,7 +40,7 @@ csv_files = {
     "2019": "./Crime_Incidents/Crime_Incidents_in_2019.csv",
 }
 
-# 創建報告保存目錄
+# Set up report path
 REPORTS_DIR = Path("./generated_reports")
 REPORTS_DIR.mkdir(exist_ok=True)
 
@@ -508,18 +508,15 @@ def get_neighborhood_clusters():
     return sorted_clusters  # Return the sorted list of neighborhoods
 
 
-# 更新 download_report 端點
+# Update download_report
 @app.get("/download_report")
 async def download_report(name: str, start_date: str, end_date: str, location: str):
     try:
-        # 生成報告數據
         report_data = get_report(start_date, end_date, location)
 
-        # 生成文件名
         filename = f"crime_report_{name}_{start_date}_{end_date}.pdf"
         file_path = REPORTS_DIR / filename
 
-        # 生成HTML內容
         html_content = f"""
         <html>
             <head>
@@ -552,7 +549,7 @@ async def download_report(name: str, start_date: str, end_date: str, location: s
                     <tbody>
         """
 
-        # 添加表格數據
+        # Add form data
         for item in report_data:
             html_content += f"""
                 <tr>
@@ -573,7 +570,7 @@ async def download_report(name: str, start_date: str, end_date: str, location: s
         </html>
         """
 
-        # 配置 pdfkit 選項
+        # Set up pdfkit Options
         options = {
             'page-size': 'A4',
             'margin-top': '0.75in',
@@ -583,10 +580,10 @@ async def download_report(name: str, start_date: str, end_date: str, location: s
             'encoding': "UTF-8",
         }
 
-        # 生成 PDF
+        # Generate PDF
         pdfkit.from_string(html_content, str(file_path), options=options)
 
-        # 返回文件
+        # Return file
         if not file_path.exists():
             raise HTTPException(
                 status_code=404, detail="Report generation failed")

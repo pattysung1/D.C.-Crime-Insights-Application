@@ -11,7 +11,6 @@ const Reports = () => {
     const [neighborhoods, setNeighborhoods] = useState([]);  // Neighborhoods array
     const [name, setName] = useState("");            // Report Name
     const [error, setError] = useState("");          // Error Handling
-    // 定義下載 PDF 的函數
     const downloadReport = async () => {
         try {
             if (!name || !startDate || !endDate || !location) {
@@ -37,23 +36,23 @@ const Reports = () => {
                 throw new Error(`Error: ${response.status}`);
             }
 
-            // 獲取檔案名稱
+            // Get Document name
             const contentDisposition = response.headers.get('Content-Disposition');
             const filenameMatch = contentDisposition && contentDisposition.match(/filename="?([^"]*)"?/);
             const filename = filenameMatch ? filenameMatch[1] : `${name}_crime_report.pdf`;
 
-            // 創建 blob 並下載
+            // Create blob and download
             const blob = await response.blob();
             const downloadUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = downloadUrl;
             link.download = filename;
 
-            // 觸發下載
+            // Let it download
             document.body.appendChild(link);
             link.click();
 
-            // 清理
+            // Clean
             document.body.removeChild(link);
             window.URL.revokeObjectURL(downloadUrl);
 
@@ -221,14 +220,10 @@ const Reports = () => {
                             />
                         </div>
 
-                        {/* Button to Download Report
-                        <button style={{ width: "100%", padding: "10px", backgroundColor: "#1B1B1B", color: "white", border: "1px solid gray" }}>
-                            Generate and Download Crime Report
-                        </button> */}
                         <button
                             onClick={() => {
                                 console.log("Download button clicked!");
-                                downloadReport();  // 這裡需要定義一個下載報告的函數
+                                downloadReport();
                             }}
                             style={{ width: "100%", padding: "10px", backgroundColor: "#1B1B1B", color: "white", border: "1px solid gray" }}
                         >
