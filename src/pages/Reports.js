@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import TotalsComponent from '../components/TotalsComponent'; // Assuming you have a TotalsComponent
 import '../styles/Reports.css'; // Import your CSS styles
 
+
 const Reports = () => {
     const [report, setReport] = useState(null);
     const [startDate, setStartDate] = useState("");  // Start Date
@@ -10,6 +11,27 @@ const Reports = () => {
     const [neighborhoods, setNeighborhoods] = useState([]);  // Neighborhoods array
     const [name, setName] = useState("");            // Report Name
     const [error, setError] = useState("");          // Error Handling
+    // 定義下載 PDF 的函數
+    const downloadReport = () => {
+        fetch(`http://localhost:8000/download_report?name=${name}&start_date=${startDate}&end_date=${endDate}&location=${location}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+                return response.blob(); // 返回 Blob 格式的二進制數據
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob); // 創建 Blob 的 URL
+                const link = document.createElement('a');    // 創建一個 <a> 標籤
+                link.href = url;
+                link.setAttribute('download', `${name}_crime_report.pdf`); // 設置文件名
+                document.body.appendChild(link); // 將 <a> 加到 DOM 中
+                link.click();  // 自動點擊，觸發下載
+                link.remove(); // 下載完後刪除這個鏈接
+            })
+            .catch(error => console.error("Error downloading the report:", error)); // 捕捉錯誤
+    };
+
 
     // Fetch neighborhood clusters from the backend
     useEffect(() => {
@@ -105,10 +127,17 @@ const Reports = () => {
                     </select>
                 </div>
 
-                {/* Button to Generate Report */}
-                <button onClick={fetchReportData} style={{ width: "100%", padding: "10px", backgroundColor: "#1B1B1B", color: "white", border: "1px solid gray" }}>
+                <button
+                    onClick={() => {
+                        console.log("Button clicked!");
+                        fetchReportData();
+                    }}
+                    style={{ width: "100%", padding: "10px", backgroundColor: "#1B1B1B", color: "white", border: "1px solid gray" }}
+                >
                     Generate Report
                 </button>
+
+
 
                 {/* Error Handling */}
                 {error && <div style={{ color: 'red', marginTop: '10px' }}>{error}</div>}
@@ -160,10 +189,20 @@ const Reports = () => {
                             />
                         </div>
 
-                        {/* Button to Download Report */}
+                        {/* Button to Download Report
                         <button style={{ width: "100%", padding: "10px", backgroundColor: "#1B1B1B", color: "white", border: "1px solid gray" }}>
                             Generate and Download Crime Report
+                        </button> */}
+                        <button
+                            onClick={() => {
+                                console.log("Download button clicked!");
+                                downloadReport();  // 這裡需要定義一個下載報告的函數
+                            }}
+                            style={{ width: "100%", padding: "10px", backgroundColor: "#1B1B1B", color: "white", border: "1px solid gray" }}
+                        >
+                            Generate and Download Crime Report
                         </button>
+
                     </div>
                 )}
 

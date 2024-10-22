@@ -11,6 +11,7 @@ import plotly.io as pio
 import reports
 from typing import List
 from pydantic import BaseModel
+import pdfkit
 
 app = FastAPI()
 
@@ -53,6 +54,8 @@ crime_category_mapping = {
 }
 
 # Calculate trends data from CSV files
+
+
 def calculate_trends():
     trends_data = []
 
@@ -86,6 +89,8 @@ def calculate_trends():
     return trends_data
 
 # Endpoint to fetch and save the last 30 days' data
+
+
 @app.get("/")
 async def fetch_last30_data():
     async with httpx.AsyncClient() as client:
@@ -100,6 +105,8 @@ async def fetch_last30_data():
             return {"error": "Failed to fetch data", "status_code": response.status_code}
 
 # Calculate crime data for dashboard
+
+
 @app.get("/dashboard")
 def analyze_data():
     if not os.path.exists(LOCAL_LAST30_FILE):
@@ -170,6 +177,7 @@ def analyze_data():
         }
     }
 
+
 @app.get("/crime-data")
 def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = None, endDate: str = None):
     if not os.path.exists(LOCAL_LAST30_FILE):
@@ -188,7 +196,8 @@ def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = Non
         lng = attributes.get("LONGITUDE")
         crime_type = attributes.get("OFFENSE")
         shift = attributes.get("SHIFT")
-        crime_zone = attributes.get("WARD")  # Assuming "WARD" represents the zone
+        # Assuming "WARD" represents the zone
+        crime_zone = attributes.get("WARD")
         crime_date = attributes.get("REPORT_DAT")
         method = attributes.get("METHOD")  # Extract the method of crime
 
@@ -225,6 +234,7 @@ def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = Non
 
     return filtered_data
 
+
 @app.get("/crime-types")
 def get_crime_types():
     if not os.path.exists(LOCAL_LAST30_FILE):
@@ -238,6 +248,7 @@ def get_crime_types():
                        for feature in data.get("features", [])))
 
     return crime_types
+
 
 @app.get("/crime-zones")
 def get_crime_zones():
@@ -255,6 +266,8 @@ def get_crime_zones():
     return crime_zones
 
 # Establish MySQL connection (using your existing function)
+
+
 def establish_connection():
     try:
         conn = mysql.connector.connect(
@@ -270,6 +283,8 @@ def establish_connection():
         return None
 
 # API endpoint to fetch total crimes by shift
+
+
 @app.get("/crime-prediction")
 def get_crime_prediction_data():
     conn = establish_connection()
@@ -296,12 +311,14 @@ def get_crime_prediction_data():
 
     # Create a Plotly bar chart
     fig = go.Figure([go.Bar(x=df['shift'], y=df['total_crimes'])])
-    fig.update_layout(title="Total Crimes by Shift", xaxis_title="Shift", yaxis_title="Total Crimes")
+    fig.update_layout(title="Total Crimes by Shift",
+                      xaxis_title="Shift", yaxis_title="Total Crimes")
 
     # Render the figure as an HTML div
     chart_html = pio.to_html(fig, full_html=False)
 
     return {"chart": chart_html}
+
 
 class CrimeReport(BaseModel):
     ccn: str  # Ensure CCN is a string
@@ -435,6 +452,7 @@ def load_data_from_db():
 
 #     return result  # Return the filtered data as a list of dictionaries
 
+
 @app.get("/report", response_model=List[CrimeReport])
 def get_report(start_date: str, end_date: str, location: str):
     # Load data from the database
@@ -450,7 +468,8 @@ def get_report(start_date: str, end_date: str, location: str):
     filtered_data = df[
         (df['REPORT_DAT'] >= start_date) &
         (df['REPORT_DAT'] <= end_date) &
-        (df['neighborhood_clusters'].str.lower() == location.lower())  # Make case insensitive
+        (df['neighborhood_clusters'].str.lower() ==
+         location.lower())  # Make case insensitive
     ]
 
     if filtered_data.empty:
@@ -460,11 +479,11 @@ def get_report(start_date: str, end_date: str, location: str):
     result = filtered_data.to_dict(orient='records')
     for row in result:
         row['ccn'] = str(row['ccn'])  # Convert CCN to string
-        row['REPORT_DAT'] = row['REPORT_DAT'].strftime('%Y-%m-%d %H:%M:%S')  # Convert datetime to string
+        row['REPORT_DAT'] = row['REPORT_DAT'].strftime(
+            '%Y-%m-%d %H:%M:%S')  # Convert datetime to string
         row['ward'] = str(row['ward'])  # Convert ward to string
 
     return result  # Return the filtered data as a list of dictionaries
-
 
 
 # Function to load neighborhood clusters from the DataFrame
@@ -475,10 +494,28 @@ def get_neighborhood_clusters():
         return {"error": "Failed to load data from the database."}
 
     # Filter out None or empty values from neighborhood_clusters before sorting
-    valid_clusters = [cluster for cluster in df['neighborhood_clusters'].unique() if isinstance(cluster, str) and cluster.strip()]
+    valid_clusters = [cluster for cluster in df['neighborhood_clusters'].unique(
+    ) if isinstance(cluster, str) and cluster.strip()]
     sorted_clusters = sorted(valid_clusters)  # Sort clusters alphabetically
 
     return sorted_clusters  # Return the sorted list of neighborhoods
 
 
+@app.get("/download_report")
+def download_report(name: str, start_date: str, end_date: str, location: str):
+    file_path = f"./generated_reports/{name}_crime_report.pdf"
 
+    # 檢查文件是否存在
+    if not os.path.exists(file_path):
+        return {"error": "Report not found."}
+
+    # 返回生成的 PDF 文件
+    return FileResponse(path=file_path, media_type='application/pdf', filename=f"{name}_crime_report.pdf")
+
+
+@app.get("/generate_report")
+def generate_report(name: str, start_date: str, end_date: str, location: str):
+    report_html = f"<html><body><h1>Report for {name}</h1><p>Start Date: {start_date}</p><p>End Date: {end_date}</p><p>Location: {location}</p></body></html>"
+    file_path = f"./generated_reports/{name}_crime_report.pdf"
+    pdfkit.from_string(report_html, file_path)
+    return {"message": "Report generated successfully", "file_path": file_path}
