@@ -1,6 +1,6 @@
 import httpx
 import json
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from collections import Counter
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -12,6 +12,9 @@ import reports
 from typing import List
 from pydantic import BaseModel
 import pdfkit
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
 
 app = FastAPI()
 
@@ -36,6 +39,10 @@ csv_files = {
     "2020": "./Crime_Incidents/Crime_Incidents_in_2020.csv",
     "2019": "./Crime_Incidents/Crime_Incidents_in_2019.csv",
 }
+
+# 創建報告保存目錄
+REPORTS_DIR = Path("./generated_reports")
+REPORTS_DIR.mkdir(exist_ok=True)
 
 # Mapping for offense types to broader categories
 crime_category_mapping = {
@@ -501,16 +508,101 @@ def get_neighborhood_clusters():
     return sorted_clusters  # Return the sorted list of neighborhoods
 
 
+# 更新 download_report 端點
 @app.get("/download_report")
-def download_report(name: str, start_date: str, end_date: str, location: str):
-    file_path = f"./generated_reports/{name}_crime_report.pdf"
+async def download_report(name: str, start_date: str, end_date: str, location: str):
+    try:
+        # 生成報告數據
+        report_data = get_report(start_date, end_date, location)
 
-    # 檢查文件是否存在
-    if not os.path.exists(file_path):
-        return {"error": "Report not found."}
+        # 生成文件名
+        filename = f"crime_report_{name}_{start_date}_{end_date}.pdf"
+        file_path = REPORTS_DIR / filename
 
-    # 返回生成的 PDF 文件
-    return FileResponse(path=file_path, media_type='application/pdf', filename=f"{name}_crime_report.pdf")
+        # 生成HTML內容
+        html_content = f"""
+        <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; }}
+                    h1 {{ text-align: center; color: #333; }}
+                    table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                    th {{ background-color: #f5f5f5; }}
+                </style>
+            </head>
+            <body>
+                <h1>Crime Report</h1>
+                <p><strong>Location:</strong> {location}</p>
+                <p><strong>Date Range:</strong> {start_date} to {end_date}</p>
+                <p><strong>Generated for:</strong> {name}</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>CCN</th>
+                            <th>Report Date</th>
+                            <th>Shift</th>
+                            <th>Offense</th>
+                            <th>Method</th>
+                            <th>Ward</th>
+                            <th>Neighborhood</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        """
+
+        # 添加表格數據
+        for item in report_data:
+            html_content += f"""
+                <tr>
+                    <td>{item.get('ccn', '')}</td>
+                    <td>{item.get('REPORT_DAT', '')}</td>
+                    <td>{item.get('SHIFT', '')}</td>
+                    <td>{item.get('offense', '')}</td>
+                    <td>{item.get('method', '')}</td>
+                    <td>{item.get('ward', '')}</td>
+                    <td>{item.get('neighborhood_clusters', '')}</td>
+                </tr>
+            """
+
+        html_content += """
+                    </tbody>
+                </table>
+            </body>
+        </html>
+        """
+
+        # 配置 pdfkit 選項
+        options = {
+            'page-size': 'A4',
+            'margin-top': '0.75in',
+            'margin-right': '0.75in',
+            'margin-bottom': '0.75in',
+            'margin-left': '0.75in',
+            'encoding': "UTF-8",
+        }
+
+        # 生成 PDF
+        pdfkit.from_string(html_content, str(file_path), options=options)
+
+        # 返回文件
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=404, detail="Report generation failed")
+
+        return FileResponse(
+            path=str(file_path),
+            filename=filename,
+            media_type='application/pdf',
+            headers={
+                "Access-Control-Expose-Headers": "Content-Disposition",
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/generate_report")

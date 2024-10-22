@@ -12,24 +12,56 @@ const Reports = () => {
     const [name, setName] = useState("");            // Report Name
     const [error, setError] = useState("");          // Error Handling
     // 定義下載 PDF 的函數
-    const downloadReport = () => {
-        fetch(`http://localhost:8000/download_report?name=${name}&start_date=${startDate}&end_date=${endDate}&location=${location}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Network response was not ok");
-                }
-                return response.blob(); // 返回 Blob 格式的二進制數據
-            })
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob); // 創建 Blob 的 URL
-                const link = document.createElement('a');    // 創建一個 <a> 標籤
-                link.href = url;
-                link.setAttribute('download', `${name}_crime_report.pdf`); // 設置文件名
-                document.body.appendChild(link); // 將 <a> 加到 DOM 中
-                link.click();  // 自動點擊，觸發下載
-                link.remove(); // 下載完後刪除這個鏈接
-            })
-            .catch(error => console.error("Error downloading the report:", error)); // 捕捉錯誤
+    const downloadReport = async () => {
+        try {
+            if (!name || !startDate || !endDate || !location) {
+                setError("Please fill in all fields before downloading the report.");
+                return;
+            }
+
+            const url = new URL('http://localhost:8000/download_report');
+            url.searchParams.append('name', name);
+            url.searchParams.append('start_date', startDate);
+            url.searchParams.append('end_date', endDate);
+            url.searchParams.append('location', location);
+
+            const response = await fetch(url.toString(), {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/pdf',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`);
+            }
+
+            // 獲取檔案名稱
+            const contentDisposition = response.headers.get('Content-Disposition');
+            const filenameMatch = contentDisposition && contentDisposition.match(/filename="?([^"]*)"?/);
+            const filename = filenameMatch ? filenameMatch[1] : `${name}_crime_report.pdf`;
+
+            // 創建 blob 並下載
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = filename;
+
+            // 觸發下載
+            document.body.appendChild(link);
+            link.click();
+
+            // 清理
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(downloadUrl);
+
+            console.log('Download completed successfully');
+        } catch (error) {
+            console.error('Error downloading the report:', error);
+            setError('Failed to download report. Please try again.');
+        }
     };
 
 
