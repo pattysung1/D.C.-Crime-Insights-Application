@@ -626,13 +626,13 @@ def generate_report(name: str, start_date: str, end_date: str, location: str):
 
 
 # for ChatBot
-# 定義一個類來接收用戶消息
+# Define a class to receive user messages
 class ChatRequest(BaseModel):
     message: str
 
 OPENAI_API_KEY = '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'
 
-# 初始化數據庫連接
+# Initialize database connection
 def init_database():
     user = "admin"
     password = "capstonegroup10"
@@ -643,7 +643,7 @@ def init_database():
     db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
     return SQLDatabase.from_uri(db_uri)
 
-# 定義 AI 回答邏輯
+# Define AI response logic
 def get_sql_chain(db):
     template = """
     You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
@@ -659,7 +659,6 @@ def get_sql_chain(db):
     SQL Query:
     """
     prompt = ChatPromptTemplate.from_template(template)
-    # llm = ChatOpenAI(model="gpt-4-0125-preview")
     llm = ChatOpenAI(model="gpt-4-0125-preview", openai_api_key=OPENAI_API_KEY)
 
     def get_schema(_):
@@ -676,10 +675,10 @@ def get_sql_chain(db):
 async def chatbot(request: ChatRequest):
     user_message = request.message
 
-    # 連接到 MySQL 數據庫
+    # Connect to the MySQL database
     db = init_database()
 
-    # 建立回應邏輯
+    # Generate a response
     response = get_response(user_message, db, [])
     
     return {"response": response}
@@ -699,7 +698,7 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list):
   
     prompt = ChatPromptTemplate.from_template(template)
     
-    # 这里传入 API Key
+    # Pass API key here
     llm = ChatOpenAI(model="gpt-4-0125-preview", openai_api_key=OPENAI_API_KEY)
   
     chain = (
@@ -716,4 +715,5 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list):
         "question": user_query,
         "chat_history": chat_history,
     })
+
 
