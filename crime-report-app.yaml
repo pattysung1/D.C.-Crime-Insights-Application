@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crime-report-app
+  namespace: crime-report-web-application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crime-report-app
+  template:
+    metadata:
+      labels:
+        app: crime-report-app
+    spec:
+      containers:
+      - name: crime-report-container
+        image: kawai463/crime-report-webapp:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crime-service
+  namespace: crime-report-web-application
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+  selector:
+    app: crime-report-app
+  # externalIPs should be replaced with a valid public IP or omitted
+  # externalIPs:
+  #   - <valid-external-ip>
