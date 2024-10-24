@@ -1,20 +1,36 @@
 import React, { useState } from 'react';
-import '../styles/ChatBotComponent.css';  // Import your chatbot styles
+import '../styles/ChatBotComponent.css';  // Import styles
 
 const ChatBotComponent = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);  // Control whether the chatbot is expanded
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue.trim()) {
+      // Display the user's message
       setMessages([...messages, { text: inputValue, sender: 'user' }]);
+      const userMessage = inputValue;
       setInputValue('');
 
-      // Simulate a bot response
-      setTimeout(() => {
-        setMessages(prevMessages => [...prevMessages, { text: 'Hello! How can I assist you today?', sender: 'bot' }]);
-      }, 1000);
+      // Send request to the backend
+      try {
+        const response = await fetch("http://127.0.0.1:8000/chatbot", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: userMessage }),
+        });
+
+        const data = await response.json();
+        const botMessage = data.response;
+
+        // Display the bot's response
+        setMessages(prevMessages => [...prevMessages, { text: botMessage, sender: 'bot' }]);
+      } catch (error) {
+        console.error("Error:", error);
+      }
     }
   };
 
@@ -29,17 +45,17 @@ const ChatBotComponent = () => {
   };
 
   const toggleChatBot = () => {
-    setIsOpen(!isOpen);  // Toggle the chatbot visibility
+    setIsOpen(!isOpen);  // Toggle the chatbot open/close state
   };
 
   return (
     <div>
-      {/* Display chatbot logo, click to expand the chatbox */}
+      {/* Display the chatbot logo, clicking on it expands the chat window */}
       <div className="chatbot-toggle" onClick={toggleChatBot}>
         <img src="/photo/chatbot-logo.png" alt="ChatBot Logo" className="chatbot-logo" />
       </div>
 
-      {/* Display the chatbox only when isOpen is true */}
+      {/* Show the chat window when isOpen is true */}
       {isOpen && (
         <div className="chatbot-container">
           <h2>ChatBot</h2>

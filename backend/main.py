@@ -1,6 +1,6 @@
 import httpx
 import json
-from fastapi import FastAPI
+from fastapi import FastAPI, Query, HTTPException
 from collections import Counter
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -8,6 +8,25 @@ import os
 import mysql.connector
 import plotly.graph_objects as go
 import plotly.io as pio
+import reports
+from typing import List
+from pydantic import BaseModel
+import pdfkit
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
+
+from fastapi import FastAPI, Request
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_openai import ChatOpenAI
+from pydantic import BaseModel
+import mysql.connector
+from langchain_community.utilities import SQLDatabase
+from langchain_core.output_parsers import StrOutputParser
+
+
 from datetime import datetime, timedelta
 
 app = FastAPI()
@@ -35,6 +54,8 @@ crime_category_mapping = {
 }
 
 # Calculate trends data from CSV files
+
+
 def calculate_trends():
 
     conn = establish_connection()
@@ -89,6 +110,8 @@ def calculate_trends():
 
 
 # Calculate crime data for dashboard
+
+
 @app.get("/dashboard")
 def analyze_data():
 
@@ -300,6 +323,8 @@ def get_crime_zones():
         conn.close()
 
 # Establish MySQL connection (using your existing function)
+
+
 def establish_connection():
     try:
         conn = mysql.connector.connect(
@@ -315,6 +340,8 @@ def establish_connection():
         return None
 
 # API endpoint to fetch total crimes by shift
+
+
 @app.get("/crime-prediction")
 def get_crime_prediction_data():
     conn = establish_connection()
@@ -341,9 +368,390 @@ def get_crime_prediction_data():
 
     # Create a Plotly bar chart
     fig = go.Figure([go.Bar(x=df['shift'], y=df['total_crimes'])])
-    fig.update_layout(title="Total Crimes by Shift", xaxis_title="Shift", yaxis_title="Total Crimes")
+    fig.update_layout(title="Total Crimes by Shift",
+                      xaxis_title="Shift", yaxis_title="Total Crimes")
 
     # Render the figure as an HTML div
     chart_html = pio.to_html(fig, full_html=False)
 
     return {"chart": chart_html}
+
+
+class CrimeReport(BaseModel):
+    ccn: str  # Ensure CCN is a string
+    REPORT_DAT: str  # Ensure REPORT_DAT is a string
+    SHIFT: str
+    offense: str
+    method: str
+    ward: str  # Ensure ward is a string
+    neighborhood_clusters: str
+
+
+def load_data_from_db():
+    mydb = establish_connection()
+    if mydb is None:
+        return None
+
+    try:
+        # Join the three tables using the ccn column to fetch comprehensive crime data
+        query = """
+            SELECT 
+                r.ccn, 
+                r.report_date_time AS REPORT_DAT, 
+                r.shift AS SHIFT, 
+                l.ward, 
+                l.neighborhood_clusters, 
+                o.offense AS offense, 
+                o.method AS method, 
+                o.offense_group AS offense_group, 
+                o.ucr_rank AS ucr_rank, 
+                l.longitude, 
+                l.latitude
+            FROM 
+                report_time r
+            INNER JOIN 
+                report_location l ON r.ccn = l.ccn
+            INNER JOIN 
+                offense_and_method o ON r.ccn = o.ccn;
+        """
+        # Fetch the data into a DataFrame
+        df = pd.read_sql(query, mydb)
+
+        # Ensure the REPORT_DAT field is in datetime format for filtering
+        df['REPORT_DAT'] = pd.to_datetime(df['REPORT_DAT'], errors='coerce')
+
+        # Check if 'REPORT_DAT' is timezone-aware or not and localize/convert accordingly
+        if df['REPORT_DAT'].dt.tz is None:
+            df['REPORT_DAT'] = df['REPORT_DAT'].dt.tz_localize('UTC')
+        else:
+            df['REPORT_DAT'] = df['REPORT_DAT'].dt.tz_convert('UTC')
+
+        return df
+    except Exception as e:
+        print(f"Failed to load data from database: {str(e)}")
+        return None
+    finally:
+        mydb.close()
+
+# Endpoint to get crime report data based on date and location
+# @app.get("/report", response_model=List[dict])  # Assuming the response model is a list of dictionaries
+# def get_report(start_date: str, end_date: str, location: str):
+#     # Load data from the database
+#     df = load_data_from_db()
+#     if df is None:
+#         return {"error": "Failed to load data from the database."}
+
+#     # Filter the DataFrame based on provided parameters
+#     filtered_data = df[
+#         (df['REPORT_DAT'] >= pd.to_datetime(start_date)) &
+#         (df['REPORT_DAT'] <= pd.to_datetime(end_date)) &
+#         (df['neighborhood_clusters'] == location)
+#     ]
+
+#     if filtered_data.empty:
+#         return {"error": "No data available for the specified filters."}
+
+#     return filtered_data.to_dict(orient='records')  # Return the filtered data as a list of dictionaries
+
+# @app.get("/report", response_model=List[CrimeReport])
+# def get_report(start_date: str, end_date: str, location: str):
+#     # Load data from the database
+#     df = load_data_from_db()
+#     if df is None:
+#         return []  # Return an empty list instead of an error message
+
+#     # Convert start_date and end_date to timezone-aware UTC datetimes
+#     try:
+#         start_date_utc = pd.to_datetime(start_date).tz_localize('UTC')
+#         end_date_utc = pd.to_datetime(end_date).tz_localize('UTC')
+#     except Exception as e:
+#         return []  # Return an empty list if date parsing fails
+
+#     # Filter the DataFrame based on provided parameters
+#     filtered_data = df[
+#         (df['REPORT_DAT'] >= start_date_utc) &
+#         (df['REPORT_DAT'] <= end_date_utc) &
+#         (df['neighborhood_clusters'] == location)
+#     ]
+
+#     if filtered_data.empty:
+#         return []  # Return an empty list if no data is found
+
+#     return filtered_data.to_dict(orient='records')  # Return the filtered data as a list of dictionaries
+
+# @app.get("/report", response_model=List[CrimeReport])
+# def get_report(start_date: str, end_date: str, location: str):
+#     # Load data from the database
+#     df = load_data_from_db()
+#     if df is None:
+#         return {"error": "Failed to load data from the database."}
+
+#     # Convert start_date and end_date to UTC
+#     start_date = pd.to_datetime(start_date).tz_localize('UTC')
+#     end_date = pd.to_datetime(end_date).tz_localize('UTC')
+
+#     # Filter the DataFrame based on provided parameters
+#     filtered_data = df[
+#         (df['REPORT_DAT'] >= start_date) &
+#         (df['REPORT_DAT'] <= end_date) &
+#         (df['neighborhood_clusters'] == location)
+#     ]
+
+#     if filtered_data.empty:
+#         return {"error": "No data available for the specified filters."}
+
+#     # Convert fields to string before returning
+#     result = filtered_data.to_dict(orient='records')
+#     for row in result:
+#         row['ccn'] = str(row['ccn'])  # Convert CCN to string
+#         row['REPORT_DAT'] = row['REPORT_DAT'].strftime('%Y-%m-%d %H:%M:%S')  # Convert datetime to string
+#         row['ward'] = str(row['ward'])  # Convert ward to string
+
+#     return result  # Return the filtered data as a list of dictionaries
+
+
+@app.get("/report", response_model=List[CrimeReport])
+def get_report(start_date: str, end_date: str, location: str):
+    # Load data from the database
+    df = load_data_from_db()
+    if df is None:
+        return []  # Return an empty list instead of an error dictionary
+
+    # Convert start_date and end_date to UTC
+    start_date = pd.to_datetime(start_date).tz_localize('UTC')
+    end_date = pd.to_datetime(end_date).tz_localize('UTC')
+
+    # Filter the DataFrame based on provided parameters
+    filtered_data = df[
+        (df['REPORT_DAT'] >= start_date) &
+        (df['REPORT_DAT'] <= end_date) &
+        (df['neighborhood_clusters'].str.lower() ==
+         location.lower())  # Make case insensitive
+    ]
+
+    if filtered_data.empty:
+        return []  # Return an empty list if no data is found
+
+    # Convert fields to string before returning
+    result = filtered_data.to_dict(orient='records')
+    for row in result:
+        row['ccn'] = str(row['ccn'])  # Convert CCN to string
+        row['REPORT_DAT'] = row['REPORT_DAT'].strftime(
+            '%Y-%m-%d %H:%M:%S')  # Convert datetime to string
+        row['ward'] = str(row['ward'])  # Convert ward to string
+
+    return result  # Return the filtered data as a list of dictionaries
+
+
+# Function to load neighborhood clusters from the DataFrame
+@app.get("/neighborhood_clusters")
+def get_neighborhood_clusters():
+    df = load_data_from_db()  # Load data into DataFrame
+    if df is None:
+        return {"error": "Failed to load data from the database."}
+
+    # Filter out None or empty values from neighborhood_clusters before sorting
+    valid_clusters = [cluster for cluster in df['neighborhood_clusters'].unique(
+    ) if isinstance(cluster, str) and cluster.strip()]
+    sorted_clusters = sorted(valid_clusters)  # Sort clusters alphabetically
+
+    return sorted_clusters  # Return the sorted list of neighborhoods
+
+
+# Update download_report
+@app.get("/download_report")
+async def download_report(name: str, start_date: str, end_date: str, location: str):
+    try:
+        report_data = get_report(start_date, end_date, location)
+
+        filename = f"crime_report_{name}_{start_date}_{end_date}.pdf"
+        file_path = REPORTS_DIR / filename
+
+        html_content = f"""
+        <html>
+            <head>
+                <style>
+                    body {{ font-family: Arial, sans-serif; }}
+                    h1 {{ text-align: center; color: #333; }}
+                    table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+                    th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                    th {{ background-color: #f5f5f5; }}
+                </style>
+            </head>
+            <body>
+                <h1>Crime Report</h1>
+                <p><strong>Location:</strong> {location}</p>
+                <p><strong>Date Range:</strong> {start_date} to {end_date}</p>
+                <p><strong>Generated for:</strong> {name}</p>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>CCN</th>
+                            <th>Report Date</th>
+                            <th>Shift</th>
+                            <th>Offense</th>
+                            <th>Method</th>
+                            <th>Ward</th>
+                            <th>Neighborhood</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        """
+
+        # Add form data
+        for item in report_data:
+            html_content += f"""
+                <tr>
+                    <td>{item.get('ccn', '')}</td>
+                    <td>{item.get('REPORT_DAT', '')}</td>
+                    <td>{item.get('SHIFT', '')}</td>
+                    <td>{item.get('offense', '')}</td>
+                    <td>{item.get('method', '')}</td>
+                    <td>{item.get('ward', '')}</td>
+                    <td>{item.get('neighborhood_clusters', '')}</td>
+                </tr>
+            """
+
+        html_content += """
+                    </tbody>
+                </table>
+            </body>
+        </html>
+        """
+
+        # Set up pdfkit Options
+        options = {
+            'page-size': 'A4',
+            'margin-top': '0.75in',
+            'margin-right': '0.75in',
+            'margin-bottom': '0.75in',
+            'margin-left': '0.75in',
+            'encoding': "UTF-8",
+        }
+
+        # Generate PDF
+        pdfkit.from_string(html_content, str(file_path), options=options)
+
+        # Return file
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=404, detail="Report generation failed")
+
+        return FileResponse(
+            path=str(file_path),
+            filename=filename,
+            media_type='application/pdf',
+            headers={
+                "Access-Control-Expose-Headers": "Content-Disposition",
+                "Content-Disposition": f"attachment; filename={filename}"
+            }
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/generate_report")
+def generate_report(name: str, start_date: str, end_date: str, location: str):
+    report_html = f"<html><body><h1>Report for {name}</h1><p>Start Date: {start_date}</p><p>End Date: {end_date}</p><p>Location: {location}</p></body></html>"
+    file_path = f"./generated_reports/{name}_crime_report.pdf"
+    pdfkit.from_string(report_html, file_path)
+    return {"message": "Report generated successfully", "file_path": file_path}
+
+
+
+
+
+# for ChatBot
+# Define a class to receive user messages
+class ChatRequest(BaseModel):
+    message: str
+
+OPENAI_API_KEY = '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'
+
+# Initialize database connection
+def init_database():
+    user = "admin"
+    password = "capstonegroup10"
+    host = "database-crime-dc.cxqaw406cjk5.us-east-1.rds.amazonaws.com"
+    port = 3306
+    database = "crime_database"
+    
+    db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
+    return SQLDatabase.from_uri(db_uri)
+
+# Define AI response logic
+def get_sql_chain(db):
+    template = """
+    You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
+    Based on the table schema below, write a SQL query that would answer the user's question. Take the conversation history into account.
+    
+    <SCHEMA>{schema}</SCHEMA>
+    
+    Conversation History: {chat_history}
+    
+    Write only the SQL query and nothing else. Do not wrap the SQL query in any other text, not even backticks.
+    
+    Question: {question}
+    SQL Query:
+    """
+    prompt = ChatPromptTemplate.from_template(template)
+    llm = ChatOpenAI(model="gpt-4-0125-preview", openai_api_key=OPENAI_API_KEY)
+
+    def get_schema(_):
+        return db.get_table_info()
+  
+    return (
+        RunnablePassthrough.assign(schema=get_schema)
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+
+@app.post("/chatbot")
+async def chatbot(request: ChatRequest):
+    user_message = request.message
+
+    # Connect to the MySQL database
+    db = init_database()
+
+    # Generate a response
+    response = get_response(user_message, db, [])
+    
+    return {"response": response}
+    
+def get_response(user_query: str, db: SQLDatabase, chat_history: list):
+    sql_chain = get_sql_chain(db)
+
+    template = """
+    You are a crime analyst. You are interacting with a user who is asking you questions about the company's crime database.
+    Based on the table schema below, user question, SQL query, and SQL response, write a natural language response that clearly explains the results of the query, including any patterns, trends, or significant insights from the data.
+    <SCHEMA>{schema}</SCHEMA>
+
+    Conversation History: {chat_history}
+    SQL Query: <SQL>{query}</SQL>
+    User question: {question}
+    SQL Response: {response}"""
+  
+    prompt = ChatPromptTemplate.from_template(template)
+    
+    # Pass API key here
+    llm = ChatOpenAI(model="gpt-4-0125-preview", openai_api_key=OPENAI_API_KEY)
+  
+    chain = (
+        RunnablePassthrough.assign(query=sql_chain).assign(
+          schema=lambda _: db.get_table_info(),
+          response=lambda vars: db.run(vars["query"]),
+        )
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+  
+    return chain.invoke({
+        "question": user_query,
+        "chat_history": chat_history,
+    })
+
+
