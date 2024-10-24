@@ -40,6 +40,10 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
+# Set up report path
+REPORTS_DIR = Path("./generated_reports")
+REPORTS_DIR.mkdir(exist_ok=True)
+
 # Mapping for offense types to broader categories
 crime_category_mapping = {
     "theft/other": "theft (non auto)",
