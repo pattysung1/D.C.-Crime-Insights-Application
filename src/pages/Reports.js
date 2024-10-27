@@ -18,7 +18,7 @@ const Reports = () => {
                 return;
             }
 
-            const url = new URL('http://localhost:8000/download_report');
+            const url = new URL('http://localhost:8000/api/download_report');
             url.searchParams.append('name', name);
             url.searchParams.append('start_date', startDate);
             url.searchParams.append('end_date', endDate);
@@ -67,7 +67,7 @@ const Reports = () => {
     // Fetch neighborhood clusters from the backend
     useEffect(() => {
         const fetchNeighborhoods = () => {
-            fetch(`http://localhost:8000/neighborhood_clusters`)
+            fetch("/api/neighborhood_clusters")
                 .then(response => {
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
@@ -102,7 +102,7 @@ const Reports = () => {
         // Clear previous error
         setError("");
 
-        fetch(`http://localhost:8000/report?start_date=${startDate}&end_date=${endDate}&location=${location}`)
+        fetch(`/api/report?start_date=${startDate}&end_date=${endDate}&location=${location}`)
             .then(response => response.json())
             .then(data => {
                 console.log(data);
