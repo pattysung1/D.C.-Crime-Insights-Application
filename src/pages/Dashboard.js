@@ -14,7 +14,7 @@ const Dashboard = () => {
         // Fetch data from the backend
         const fetchDashboardData = async () => {
             try {
-                const response = await axios.get('http://127.0.0.1:8000/dashboard');
+                const response = await axios.get('/api/dashboard');
                 setDashboardData(response.data.dashboard);
                 setLoading(false);
             } catch (error) {

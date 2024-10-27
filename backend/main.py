@@ -34,7 +34,7 @@ app = FastAPI()
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Your React app's origin
+    allow_origins=["http://localhost:3000", "http://54.225.57.155"], # Your React app's origin
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
@@ -115,8 +115,7 @@ def calculate_trends():
 
 # Calculate crime data for dashboard
 
-
-@app.get("/dashboard")
+@app.get("/api/dashboard")
 def analyze_data():
 
     conn = establish_connection()
@@ -199,7 +198,7 @@ def analyze_data():
         conn.close()
 
 
-@app.get("/crime-data")
+@app.get("/api/crime-data")
 def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = None, endDate: str = None):
     conn = establish_connection()
     if conn is None:
@@ -268,7 +267,7 @@ def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = Non
         conn.close()
 
 
-@app.get("/crime-types")
+@app.get("/api/crime-types")
 def get_crime_types():
     conn = establish_connection()
     if conn is None:
@@ -297,7 +296,7 @@ def get_crime_types():
         cursor.close()
         conn.close()
 
-@app.get("/crime-zones")
+@app.get("/api/crime-zones")
 def get_crime_zones():
     conn = establish_connection()
     if conn is None:
@@ -346,7 +345,7 @@ def establish_connection():
 # API endpoint to fetch total crimes by shift
 
 
-@app.get("/crime-prediction")
+@app.get("/api/crime-prediction")
 def get_crime_prediction_data():
     conn = establish_connection()
     if conn is None:
@@ -514,7 +513,7 @@ def load_data_from_db():
 #     return result  # Return the filtered data as a list of dictionaries
 
 
-@app.get("/report", response_model=List[CrimeReport])
+@app.get("/api/report", response_model=List[CrimeReport])
 def get_report(start_date: str, end_date: str, location: str):
     # Load data from the database
     df = load_data_from_db()
@@ -548,7 +547,7 @@ def get_report(start_date: str, end_date: str, location: str):
 
 
 # Function to load neighborhood clusters from the DataFrame
-@app.get("/neighborhood_clusters")
+@app.get("/api/neighborhood_clusters")
 def get_neighborhood_clusters():
     df = load_data_from_db()  # Load data into DataFrame
     if df is None:
@@ -563,7 +562,7 @@ def get_neighborhood_clusters():
 
 
 # Update download_report
-@app.get("/download_report")
+@app.get("/api/download_report")
 async def download_report(name: str, start_date: str, end_date: str, location: str):
     try:
         report_data = get_report(start_date, end_date, location)
@@ -656,7 +655,7 @@ async def download_report(name: str, start_date: str, end_date: str, location: s
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/generate_report")
+@app.get("/api/generate_report")
 def generate_report(name: str, start_date: str, end_date: str, location: str):
     report_html = f"<html><body><h1>Report for {name}</h1><p>Start Date: {start_date}</p><p>End Date: {end_date}</p><p>Location: {location}</p></body></html>"
     file_path = f"./generated_reports/{name}_crime_report.pdf"

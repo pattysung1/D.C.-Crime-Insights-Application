@@ -20,9 +20,9 @@ const CrimeMap = () => {
       try {
         const [crimeDataResponse, crimeTypesResponse, crimeZonesResponse] =
           await Promise.all([
-            axios.get("http://127.0.0.1:8000/crime-data"),
-            axios.get("http://127.0.0.1:8000/crime-types"),
-            axios.get("http://127.0.0.1:8000/crime-zones"),
+            axios.get("/api/crime-data"),
+            axios.get("/api/crime-types"),
+            axios.get("/api/crime-zones"),
           ]);
 
         setCrimeData(crimeDataResponse.data);
