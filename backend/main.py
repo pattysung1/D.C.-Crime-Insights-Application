@@ -712,7 +712,7 @@ def get_sql_chain(db):
         | StrOutputParser()
     )
 
-@app.post("/chatbot")
+@app.post("/api/chatbot")
 async def chatbot(request: ChatRequest):
     user_message = request.message
 
