@@ -1,12 +1,13 @@
 import React from 'react';
+import '../styles/PublicSafety.css';
 
 const PublicSafety = () => {
     return (
-        <div>
+        <div className="public-safety-container">
             <h2>Public Safety Resources</h2>
             <p>Here are some important public safety resources for Washington, DC:</p>
 
-            <table border="1" style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <table className="safety-table">
                 <thead>
                     <tr>
                         <th>Organization</th>
@@ -27,7 +28,7 @@ const PublicSafety = () => {
                     </tr>
                     <tr>
                         <td>Fire and Emergency Medical Services (EMS)</td>
-                        <td>Find station: [Fire and EMS Locator](https://dcgis.maps.arcgis.com)</td>
+                        <td><a href="https://dcgis.maps.arcgis.com">Find station: Fire and EMS Locator</a></td>
                         <td><a href="https://fems.dc.gov" target="_blank" rel="noopener noreferrer">fems.dc.gov</a></td>
                     </tr>
                     <tr>
