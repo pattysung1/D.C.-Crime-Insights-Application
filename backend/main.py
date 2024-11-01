@@ -758,3 +758,60 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list):
     })
 
 
+# for stacked bar chart
+def calculate_monthly_crime_data():
+    conn = establish_connection()
+    if conn is None:
+        return {"error": "Failed to connect to the database."}
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        
+        # Query to get crime counts grouped by offense and month
+        query = """
+            SELECT 
+                MONTH(rt.report_date_time) as month, 
+                om.offense, 
+                COUNT(*) as count
+            FROM report_time rt
+            JOIN offense_and_method om ON rt.ccn = om.ccn
+            WHERE YEAR(rt.report_date_time) = YEAR(CURDATE())  -- Limit to current year
+            GROUP BY month, om.offense
+            ORDER BY month;
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+
+        # Initialize monthly data dictionary with each month and crime types
+        monthly_crime_data = {month: {category: 0 for category in crime_category_mapping.values()} for month in range(1, 13)}
+
+        # Populate the monthly crime data
+        for row in results:
+            month = row["month"]
+            offense = row["offense"]
+            count = row["count"]
+
+            # Map the offense to a broader category using the crime_category_mapping
+            category = crime_category_mapping.get(offense, "miscellaneous")
+            monthly_crime_data[month][category] += count
+
+        # Convert the dictionary to a list of objects for easier frontend handling
+        monthly_crime_data_list = []
+        for month, data in monthly_crime_data.items():
+            data["month"] = month
+            monthly_crime_data_list.append(data)
+
+        return monthly_crime_data_list
+
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/api/monthly-crime-data")
+def get_monthly_crime_data():
+    monthly_data = calculate_monthly_crime_data()
+    if "error" in monthly_data:
+        raise HTTPException(status_code=500, detail=monthly_data["error"])
+    return monthly_data
