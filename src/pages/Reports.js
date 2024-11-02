@@ -18,7 +18,7 @@ const Reports = () => {
                 return;
             }
 
-            const url = new URL('http://localhost:8000/api/download_report');
+            const url = new URL('/api/download_report');
             url.searchParams.append('name', name);
             url.searchParams.append('start_date', startDate);
             url.searchParams.append('end_date', endDate);
