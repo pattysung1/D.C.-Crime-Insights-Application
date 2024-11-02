@@ -197,6 +197,9 @@ def analyze_data():
         cursor.close()
         conn.close()
 
+@app.get("/api/test")
+async def test_endpoint():
+    return {"status": "test endpoint working"}
 
 @app.get("/api/crime-data")
 def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = None, endDate: str = None):
