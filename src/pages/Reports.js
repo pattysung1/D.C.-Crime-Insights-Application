@@ -101,9 +101,13 @@ const Reports = () => {
 
         // Clear previous error
         setError("");
-
-        fetch(`/api/report?start_date=${startDate}&end_date=${endDate}&location=${location}`)
-            .then(response => response.json())
+        fetch(`/api/report?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&location=${encodeURIComponent(location)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 console.log(data);
                 setReport(data);  // Set report data
