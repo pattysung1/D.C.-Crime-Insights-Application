@@ -778,15 +778,18 @@ def calculate_monthly_crime_data():
                 COUNT(*) as count
             FROM report_time rt
             JOIN offense_and_method om ON rt.ccn = om.ccn
-            WHERE YEAR(rt.report_date_time) = YEAR(CURDATE())  -- Limit to current year
+            WHERE YEAR(rt.report_date_time) = YEAR(CURDATE())
             GROUP BY month, om.offense
             ORDER BY month;
         """
         cursor.execute(query)
         results = cursor.fetchall()
 
+        # print("Fetched monthly crime data from database:", results)
+
         # Initialize monthly data dictionary with each month and crime types
-        monthly_crime_data = {month: {category: 0 for category in crime_category_mapping.values()} for month in range(1, 13)}
+        # monthly_crime_data = {month: {category: 0 for category in crime_category_mapping.values()} for month in range(1, 13)}
+        monthly_crime_data = {month: {category: 0 for category in list(crime_category_mapping.values()) + ["miscellaneous"]} for month in range(1, 13)}
 
         # Populate the monthly crime data
         for row in results:

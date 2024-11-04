@@ -185,13 +185,9 @@ def testing_database():
     if conn != None:
         cursor = conn.cursor()
 
-        cursor.execute(f"""
-                SELECT offense, COUNT(*) as count
-                FROM report_time rt
-                JOIN offense_and_method om ON rt.ccn = om.ccn
-                WHERE YEAR(rt.report_date_time) = 2021
-                GROUP BY offense;
-            """)
+        # cursor.execute("SELECT * FROM report_time inner join report_location on report_location.CCN = report_time.CCN inner join offense_and_method on offense_and_method.CCN = report_time.CCN WHERE MONTH(report_time.report_date_time) = 10 AND YEAR(report_time.report_date_time) = YEAR(CURDATE());")
+
+        cursor.execute("Select * from report_location where CCN = 24423616")
 
         print(cursor.fetchall())
 
