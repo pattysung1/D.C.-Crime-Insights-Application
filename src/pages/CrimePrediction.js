@@ -8,10 +8,8 @@ const CrimePrediction = () => {
   useEffect(() => {
     const fetchChart = async () => {
       try {
-        const response = await axios.get(
-          "/api/crime-prediction"
-        );
-        setChartHtml(response.data.chart); // Set the HTML for the chart
+        const response = await axios.get("/api/crime-prediction");
+        setChartHtml(response.data.chart);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching crime prediction chart:", error);
@@ -26,7 +24,6 @@ const CrimePrediction = () => {
       {loading ? (
         <p>Loading chart...</p>
       ) : (
-        // Render the chart HTML in an iframe to ensure proper JS execution
         <iframe
           srcDoc={chartHtml}
           style={{ width: "100%", height: "600px", border: "none" }}

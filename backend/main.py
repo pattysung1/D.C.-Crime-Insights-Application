@@ -25,9 +25,11 @@ from pydantic import BaseModel
 import mysql.connector
 from langchain_community.utilities import SQLDatabase
 from langchain_core.output_parsers import StrOutputParser
-
-
 from datetime import datetime, timedelta
+import plotly.graph_objs as go
+from scipy.stats import linregress
+from matplotlib import cm
+import numpy as np
 
 app = FastAPI()
 
@@ -356,32 +358,88 @@ def get_crime_prediction_data():
 
     try:
         cursor = conn.cursor(dictionary=True)
+
+        # Query to get weekly data for the past 2 years
         query = """
-            SELECT shift, COUNT(*) as total_crimes
-            FROM report_time
-            GROUP BY shift
+            SELECT offense, 
+                   YEARWEEK(report_date_time, 1) AS week,
+                   COUNT(*) as total_crimes
+            FROM report_time rt
+            JOIN offense_and_method om ON rt.ccn = om.ccn
+            WHERE report_date_time >= DATE_SUB(CURDATE(), INTERVAL 2 YEAR)
+            GROUP BY offense, YEARWEEK(report_date_time, 1)
         """
         cursor.execute(query)
-        data = cursor.fetchall()  # Fetch all the rows as a list of dictionaries
+        data = cursor.fetchall()
     except mysql.connector.Error as err:
         return {"error": str(err)}
     finally:
         cursor.close()
         conn.close()
 
-    # Convert the data into a DataFrame for Plotly
+    # Ensure we have data before proceeding
+    if not data:
+        return {"error": "No data available for the selected range"}
+
+    # Convert the data into a DataFrame
     df = pd.DataFrame(data)
+    
+    # Convert 'week' to actual dates for x-axis
+    df['week_start_date'] = df['week'].apply(lambda yw: datetime.strptime(f"{yw}1", "%Y%W%w"))
 
-    # Create a Plotly bar chart
-    fig = go.Figure([go.Bar(x=df['shift'], y=df['total_crimes'])])
-    fig.update_layout(title="Total Crimes by Shift",
-                      xaxis_title="Shift", yaxis_title="Total Crimes")
+    fig = go.Figure()
 
-    # Render the figure as an HTML div
+    # Define a set of unique colors for each offense type
+    colors = [
+        "red", "blue", "orange", "yellow", "green", "purple", "pink", 
+        "brown", "cyan", "magenta"
+    ]
+    unique_offenses = df['offense'].unique()
+    color_map = {offense: colors[i % len(colors)] for i, offense in enumerate(unique_offenses)}
+
+    for offense in unique_offenses:
+        offense_data = df[df['offense'] == offense]
+
+        # Scatter points for this offense
+        fig.add_trace(go.Scatter(
+            x=offense_data['week_start_date'],
+            y=offense_data['total_crimes'],
+            mode='markers',
+            name=f"{offense} (Points)",
+            marker=dict(color=color_map[offense])
+        ))
+
+        # Linear regression fit for this offense category
+        slope, intercept, _, _, _ = linregress(
+            offense_data['week_start_date'].map(datetime.toordinal),
+            offense_data['total_crimes']
+        )
+        regression_line = slope * offense_data['week_start_date'].map(datetime.toordinal) + intercept
+
+        # Plot regression line with the same color
+        fig.add_trace(go.Scatter(
+            x=offense_data['week_start_date'],
+            y=regression_line,
+            mode='lines',
+            name=f"{offense} (Trend Line)",
+            line=dict(color=color_map[offense])
+        ))
+
+    # Update layout for readability
+    fig.update_layout(
+        title="Weekly Crime Totals with Linear Regression by Offense (Past 2 Years)",
+        xaxis_title="Week",
+        yaxis_title="Total Crimes",
+        xaxis=dict(
+            tickformat="%Y-%m-%d",
+            tickmode="auto",
+        ),
+        legend_title="Offense Type",
+    )
+
+    # Render the figure as HTML
     chart_html = pio.to_html(fig, full_html=False)
-
     return {"chart": chart_html}
-
 
 class CrimeReport(BaseModel):
     ccn: str  # Ensure CCN is a string
