@@ -6,8 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import os
 import mysql.connector
-import plotly.graph_objects as go
-import plotly.io as pio
 import reports
 from typing import List
 from pydantic import BaseModel
@@ -25,9 +23,9 @@ from pydantic import BaseModel
 import mysql.connector
 from langchain_community.utilities import SQLDatabase
 from langchain_core.output_parsers import StrOutputParser
-
-
 from datetime import datetime, timedelta
+import plotly.graph_objs as go
+from scipy.stats import linregress
 
 app = FastAPI()
 
@@ -356,32 +354,74 @@ def get_crime_prediction_data():
 
     try:
         cursor = conn.cursor(dictionary=True)
+
+        # Query to get weekly data for the past 2 years
         query = """
-            SELECT shift, COUNT(*) as total_crimes
-            FROM report_time
-            GROUP BY shift
+            SELECT offense, 
+                   YEARWEEK(report_date_time, 1) AS week,
+                   COUNT(*) as total_crimes
+            FROM report_time rt
+            JOIN offense_and_method om ON rt.ccn = om.ccn
+            WHERE report_date_time >= DATE_SUB(CURDATE(), INTERVAL 2 YEAR)
+            GROUP BY offense, YEARWEEK(report_date_time, 1)
         """
         cursor.execute(query)
-        data = cursor.fetchall()  # Fetch all the rows as a list of dictionaries
+        data = cursor.fetchall()
     except mysql.connector.Error as err:
         return {"error": str(err)}
     finally:
         cursor.close()
         conn.close()
 
-    # Convert the data into a DataFrame for Plotly
+    # Ensure we have data before proceeding
+    if not data:
+        return {"error": "No data available for the selected range"}
+
+    # Convert the data into a DataFrame
     df = pd.DataFrame(data)
+    
+    # Convert 'week' to actual dates for x-axis
+    df['week_start_date'] = df['week'].apply(lambda yw: datetime.strptime(f"{yw}1", "%Y%W%w"))
 
-    # Create a Plotly bar chart
-    fig = go.Figure([go.Bar(x=df['shift'], y=df['total_crimes'])])
-    fig.update_layout(title="Total Crimes by Shift",
-                      xaxis_title="Shift", yaxis_title="Total Crimes")
+    # Define colors for each offense type
+    colors = {
+        "theft/other": "red",
+        "theft f/auto": "blue",
+        "assault w/dangerous weapon": "orange",
+        "homicide": "yellow",
+        "motor vehicle theft": "green",
+        "burglary": "purple",
+        "robbery": "pink",
+        "sex abuse": "brown",
+        "arson": "cyan"
+    }
 
-    # Render the figure as an HTML div
-    chart_html = pio.to_html(fig, full_html=False)
+    # Prepare JSON data
+    result = {}
+    for offense in df['offense'].unique():
+        offense_data = df[df['offense'] == offense]
 
-    return {"chart": chart_html}
+        # Calculate linear regression for the offense category
+        slope, intercept, _, _, _ = linregress(
+            offense_data['week_start_date'].map(datetime.toordinal),
+            offense_data['total_crimes']
+        )
+        regression_line = slope * offense_data['week_start_date'].map(datetime.toordinal) + intercept
 
+        result[offense] = {
+            "points": {
+                "x": offense_data['week_start_date'].tolist(),
+                "y": offense_data['total_crimes'].tolist(),
+                "color": colors.get(offense, "black")  # Default to black if color not in map
+            },
+            "regression": {
+                "x": offense_data['week_start_date'].tolist(),
+                "y": regression_line.tolist(),
+                "color": colors.get(offense, "black")
+            }
+        }
+
+    return result
 
 class CrimeReport(BaseModel):
     ccn: str  # Ensure CCN is a string
