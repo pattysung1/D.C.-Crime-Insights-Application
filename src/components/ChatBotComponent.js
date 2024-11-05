@@ -15,7 +15,7 @@ const ChatBotComponent = () => {
 
       // Send request to the backend
       try {
-        const response = await fetch("http://127.0.0.1:8000/chatbot", {
+        const response = await fetch("/api/chatbot", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
