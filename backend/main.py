@@ -6,8 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import os
 import mysql.connector
-import plotly.graph_objects as go
-import plotly.io as pio
 import reports
 from typing import List
 from pydantic import BaseModel
@@ -28,8 +26,6 @@ from langchain_core.output_parsers import StrOutputParser
 from datetime import datetime, timedelta
 import plotly.graph_objs as go
 from scipy.stats import linregress
-from matplotlib import cm
-import numpy as np
 
 app = FastAPI()
 
@@ -387,59 +383,45 @@ def get_crime_prediction_data():
     # Convert 'week' to actual dates for x-axis
     df['week_start_date'] = df['week'].apply(lambda yw: datetime.strptime(f"{yw}1", "%Y%W%w"))
 
-    fig = go.Figure()
+    # Define colors for each offense type
+    colors = {
+        "theft/other": "red",
+        "theft f/auto": "blue",
+        "assault w/dangerous weapon": "orange",
+        "homicide": "yellow",
+        "motor vehicle theft": "green",
+        "burglary": "purple",
+        "robbery": "pink",
+        "sex abuse": "brown",
+        "arson": "cyan"
+    }
 
-    # Define a set of unique colors for each offense type
-    colors = [
-        "red", "blue", "orange", "yellow", "green", "purple", "pink", 
-        "brown", "cyan", "magenta"
-    ]
-    unique_offenses = df['offense'].unique()
-    color_map = {offense: colors[i % len(colors)] for i, offense in enumerate(unique_offenses)}
-
-    for offense in unique_offenses:
+    # Prepare JSON data
+    result = {}
+    for offense in df['offense'].unique():
         offense_data = df[df['offense'] == offense]
 
-        # Scatter points for this offense
-        fig.add_trace(go.Scatter(
-            x=offense_data['week_start_date'],
-            y=offense_data['total_crimes'],
-            mode='markers',
-            name=f"{offense} (Points)",
-            marker=dict(color=color_map[offense])
-        ))
-
-        # Linear regression fit for this offense category
+        # Calculate linear regression for the offense category
         slope, intercept, _, _, _ = linregress(
             offense_data['week_start_date'].map(datetime.toordinal),
             offense_data['total_crimes']
         )
         regression_line = slope * offense_data['week_start_date'].map(datetime.toordinal) + intercept
 
-        # Plot regression line with the same color
-        fig.add_trace(go.Scatter(
-            x=offense_data['week_start_date'],
-            y=regression_line,
-            mode='lines',
-            name=f"{offense} (Trend Line)",
-            line=dict(color=color_map[offense])
-        ))
+        result[offense] = {
+            "points": {
+                "x": offense_data['week_start_date'].tolist(),
+                "y": offense_data['total_crimes'].tolist(),
+                "color": colors.get(offense, "black")  # Default to black if color not in map
+            },
+            "regression": {
+                "x": offense_data['week_start_date'].tolist(),
+                "y": regression_line.tolist(),
+                "color": colors.get(offense, "black")
+            }
+        }
 
-    # Update layout for readability
-    fig.update_layout(
-        title="Weekly Crime Totals with Linear Regression by Offense (Past 2 Years)",
-        xaxis_title="Week",
-        yaxis_title="Total Crimes",
-        xaxis=dict(
-            tickformat="%Y-%m-%d",
-            tickmode="auto",
-        ),
-        legend_title="Offense Type",
-    )
-
-    # Render the figure as HTML
-    chart_html = pio.to_html(fig, full_html=False)
-    return {"chart": chart_html}
+    return result
 
 class CrimeReport(BaseModel):
     ccn: str  # Ensure CCN is a string
