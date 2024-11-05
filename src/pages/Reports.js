@@ -18,7 +18,7 @@ const Reports = () => {
                 return;
             }
 
-            const url = new URL('/api/download_report');
+            const url = new URL('/api/download_report', window.location.origin);
             url.searchParams.append('name', name);
             url.searchParams.append('start_date', startDate);
             url.searchParams.append('end_date', endDate);
@@ -26,7 +26,7 @@ const Reports = () => {
 
             const response = await fetch(url.toString(), {
                 method: 'GET',
-                credentials: 'include',
+                // credentials: 'include',
                 headers: {
                     'Accept': 'application/pdf',
                 },
@@ -99,7 +99,6 @@ const Reports = () => {
             return;
         }
 
-        // Clear previous error
         setError("");
         fetch(`/api/report?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&location=${encodeURIComponent(location)}`)
             .then(response => {
@@ -110,10 +109,11 @@ const Reports = () => {
             })
             .then(data => {
                 console.log(data);
-                setReport(data);  // Set report data
+                setReport(data);
             })
             .catch(error => {
                 console.error("Error fetching report data:", error);
+                setError("Failed to fetch report data. Please try again.");
             });
     };
 
