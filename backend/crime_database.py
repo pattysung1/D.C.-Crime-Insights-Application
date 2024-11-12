@@ -187,7 +187,7 @@ def testing_database():
 
         # cursor.execute("SELECT * FROM report_time inner join report_location on report_location.CCN = report_time.CCN inner join offense_and_method on offense_and_method.CCN = report_time.CCN WHERE MONTH(report_time.report_date_time) = 10 AND YEAR(report_time.report_date_time) = YEAR(CURDATE());")
 
-        cursor.execute("SELECT rl.* FROM report_location rl JOIN report_time rt ON rl.ccn = rt.ccn ORDER BY rt.report_date_time DESC LIMIT 100;")
+        cursor.execute("SELECT * FROM report_location WHERE ward IS NULL;")
 
         print(cursor.fetchall())
 
@@ -195,4 +195,4 @@ def testing_database():
 # create_tables()
 # populate_tables()
 # delete_from_all_tables()
-# testing_database()
+testing_database()
