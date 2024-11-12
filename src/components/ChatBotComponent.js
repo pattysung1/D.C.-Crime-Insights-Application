@@ -5,6 +5,7 @@ const ChatBotComponent = () => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);  // Control whether the chatbot is expanded
+  const [loading, setLoading] = useState(false);  // Control "thinking" indicator
 
   const handleSendMessage = async () => {
     if (inputValue.trim()) {
@@ -12,6 +13,9 @@ const ChatBotComponent = () => {
       setMessages([...messages, { text: inputValue, sender: 'user' }]);
       const userMessage = inputValue;
       setInputValue('');
+
+      // Show "thinking" message
+      setLoading(true);
 
       // Send request to the backend
       try {
@@ -26,10 +30,14 @@ const ChatBotComponent = () => {
         const data = await response.json();
         const botMessage = data.response;
 
+        // Remove "thinking" message
+        setLoading(false);
+
         // Display the bot's response
         setMessages(prevMessages => [...prevMessages, { text: botMessage, sender: 'bot' }]);
       } catch (error) {
         console.error("Error:", error);
+        setLoading(false);  // Remove "thinking" if there's an error
       }
     }
   };
@@ -68,6 +76,12 @@ const ChatBotComponent = () => {
                 {message.text}
               </div>
             ))}
+            {/* Display loading message if the bot is thinking */}
+            {loading && (
+              <div className="chatbot-message bot-message">
+                The bot is thinking...
+              </div>
+            )}
           </div>
           <div className="chatbot-input">
             <input

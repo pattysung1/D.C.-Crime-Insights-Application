@@ -49,14 +49,14 @@ const CrimeMap = () => {
     fetchData();
   }, []);
 
-  // Filter data based on filter conditions
   useEffect(() => {
     const { crimeType, crimeZone, dates } = filters; // Extract filter conditions
 
     const filtered = crimeData.filter((crime) => {
       const matchType = crimeType === "All Crimes" || crime.type === crimeType; // If "All Crimes", don't filter by type
       const matchZone =
-        crimeZone === "All Zones" || crime.zone.toString() === crimeZone; // If "All Zones", don't filter by zone
+        crimeZone === "All Zones" ||
+        (crime.zone && crime.zone.toString() === crimeZone); // Check if crime.zone exists before calling toString
       const matchDate =
         !dates[0] || // If no date filter, pass all data
         (new Date(crime.date) >= new Date(dates[0]) &&
