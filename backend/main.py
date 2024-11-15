@@ -18,7 +18,8 @@ from fastapi import FastAPI, Request
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
-from langchain_openai import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
+
 from pydantic import BaseModel
 import mysql.connector
 from langchain_community.utilities import SQLDatabase
@@ -32,7 +33,8 @@ app = FastAPI()
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://54.225.57.155"], # Your React app's origin
+    allow_origins=["http://localhost:3000",
+                   "http://54.225.57.155"],  # Your React app's origin
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
@@ -63,7 +65,7 @@ def calculate_trends():
     conn = establish_connection()
     if conn is None:
         return {"error": "Failed to connect to the database."}
-    
+
     trends_data = []
     try:
         cursor = conn.cursor(dictionary=True)
@@ -95,7 +97,6 @@ def calculate_trends():
                     crime_summary['assault with weapon'] = row['count']
                 else:
                     crime_summary[row['offense']] = row['count']
-                
 
             trends_data.append(crime_summary)
 
@@ -144,32 +145,38 @@ def analyze_data():
         offense_counter = Counter(feature["offense"] for feature in features)
 
         # Determine top crime type
-        top_crime_type = offense_counter.most_common(1)[0] if offense_counter else ("N/A", 0)
+        top_crime_type = offense_counter.most_common(
+            1)[0] if offense_counter else ("N/A", 0)
 
         # Calculate count by ward (High Crime Zone)
         ward_counter = Counter(feature["ward"] for feature in features)
-        high_crime_zone = ward_counter.most_common(1)[0] if ward_counter else ("N/A", 0)
+        high_crime_zone = ward_counter.most_common(
+            1)[0] if ward_counter else ("N/A", 0)
 
         # Calculate count by method of crime
         method_counter = Counter(feature["method"] for feature in features)
-        top_method = method_counter.most_common(1)[0] if method_counter else ("N/A", 0)
+        top_method = method_counter.most_common(
+            1)[0] if method_counter else ("N/A", 0)
 
         # Calculate count by shift (time of crime)
         shift_counter = Counter(feature["shift"] for feature in features)
-        top_shift = shift_counter.most_common(1)[0] if shift_counter else ("N/A", 0)
+        top_shift = shift_counter.most_common(
+            1)[0] if shift_counter else ("N/A", 0)
 
         # Generate trends data from the MySQL database
         trends_data = calculate_trends()
 
         # Calculate distribution data for the last 30 days
-        distribution_data = {category: 0 for category in crime_category_mapping.values()}
+        distribution_data = {
+            category: 0 for category in crime_category_mapping.values()}
         for feature in features:
             category = crime_category_mapping.get(feature["offense"])
             if category:
                 distribution_data[category] += 1
             else:
                 # Add a "miscellaneous" category if the offense isn't mapped
-                distribution_data["miscellaneous"] = distribution_data.get("miscellaneous", 0) + 1
+                distribution_data["miscellaneous"] = distribution_data.get(
+                    "miscellaneous", 0) + 1
 
         return {
             "dashboard": {
@@ -195,9 +202,11 @@ def analyze_data():
         cursor.close()
         conn.close()
 
+
 @app.get("/api/test")
 async def test_endpoint():
     return {"status": "test endpoint working"}
+
 
 @app.get("/api/crime-data")
 def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = None, endDate: str = None):
@@ -207,7 +216,8 @@ def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = Non
 
     try:
         if not startDate:
-            startDate = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+            startDate = (datetime.now() - timedelta(days=30)
+                         ).strftime("%Y-%m-%d")
         if not endDate:
             endDate = datetime.now().strftime("%Y-%m-%d")
 
@@ -297,6 +307,7 @@ def get_crime_types():
         cursor.close()
         conn.close()
 
+
 @app.get("/api/crime-zones")
 def get_crime_zones():
     conn = establish_connection()
@@ -379,9 +390,10 @@ def get_crime_prediction_data():
 
     # Convert the data into a DataFrame
     df = pd.DataFrame(data)
-    
+
     # Convert 'week' to actual dates for x-axis
-    df['week_start_date'] = df['week'].apply(lambda yw: datetime.strptime(f"{yw}1", "%Y%W%w"))
+    df['week_start_date'] = df['week'].apply(
+        lambda yw: datetime.strptime(f"{yw}1", "%Y%W%w"))
 
     # Define colors for each offense type
     colors = {
@@ -406,13 +418,15 @@ def get_crime_prediction_data():
             offense_data['week_start_date'].map(datetime.toordinal),
             offense_data['total_crimes']
         )
-        regression_line = slope * offense_data['week_start_date'].map(datetime.toordinal) + intercept
+        regression_line = slope * \
+            offense_data['week_start_date'].map(datetime.toordinal) + intercept
 
         result[offense] = {
             "points": {
                 "x": offense_data['week_start_date'].tolist(),
                 "y": offense_data['total_crimes'].tolist(),
-                "color": colors.get(offense, "black")  # Default to black if color not in map
+                # Default to black if color not in map
+                "color": colors.get(offense, "black")
             },
             "regression": {
                 "x": offense_data['week_start_date'].tolist(),
@@ -422,6 +436,7 @@ def get_crime_prediction_data():
         }
 
     return result
+
 
 class CrimeReport(BaseModel):
     ccn: str  # Ensure CCN is a string
@@ -706,28 +721,30 @@ def generate_report(name: str, start_date: str, end_date: str, location: str):
     return {"message": "Report generated successfully", "file_path": file_path}
 
 
-
-
-
 # for ChatBot
 # Define a class to receive user messages
 class ChatRequest(BaseModel):
     message: str
 
+
 OPENAI_API_KEY = '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'
 
 # Initialize database connection
+
+
 def init_database():
     user = "admin"
     password = "capstonegroup10"
     host = "database-crime-dc.cxqaw406cjk5.us-east-1.rds.amazonaws.com"
     port = 3306
     database = "crime_database"
-    
+
     db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
     return SQLDatabase.from_uri(db_uri)
 
 # Define AI response logic
+
+
 def get_sql_chain(db):
     template = """
     You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
@@ -747,13 +764,14 @@ def get_sql_chain(db):
 
     def get_schema(_):
         return db.get_table_info()
-  
+
     return (
         RunnablePassthrough.assign(schema=get_schema)
         | prompt
         | llm
         | StrOutputParser()
     )
+
 
 @app.post("/api/chatbot")
 async def chatbot(request: ChatRequest):
@@ -764,9 +782,10 @@ async def chatbot(request: ChatRequest):
 
     # Generate a response
     response = get_response(user_message, db, [])
-    
+
     return {"response": response}
-    
+
+
 def get_response(user_query: str, db: SQLDatabase, chat_history: list):
     sql_chain = get_sql_chain(db)
 
@@ -779,22 +798,22 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list):
     SQL Query: <SQL>{query}</SQL>
     User question: {question}
     SQL Response: {response}"""
-  
+
     prompt = ChatPromptTemplate.from_template(template)
-    
+
     # Pass API key here
     llm = ChatOpenAI(model="gpt-4-0125-preview", openai_api_key=OPENAI_API_KEY)
-  
+
     chain = (
         RunnablePassthrough.assign(query=sql_chain).assign(
-          schema=lambda _: db.get_table_info(),
-          response=lambda vars: db.run(vars["query"]),
+            schema=lambda _: db.get_table_info(),
+            response=lambda vars: db.run(vars["query"]),
         )
         | prompt
         | llm
         | StrOutputParser()
     )
-  
+
     return chain.invoke({
         "question": user_query,
         "chat_history": chat_history,
@@ -806,10 +825,10 @@ def calculate_monthly_crime_data():
     conn = establish_connection()
     if conn is None:
         return {"error": "Failed to connect to the database."}
-    
+
     try:
         cursor = conn.cursor(dictionary=True)
-        
+
         # Query to get crime counts grouped by offense and month
         query = """
             SELECT 
@@ -829,7 +848,8 @@ def calculate_monthly_crime_data():
 
         # Initialize monthly data dictionary with each month and crime types
         # monthly_crime_data = {month: {category: 0 for category in crime_category_mapping.values()} for month in range(1, 13)}
-        monthly_crime_data = {month: {category: 0 for category in list(crime_category_mapping.values()) + ["miscellaneous"]} for month in range(1, 13)}
+        monthly_crime_data = {month: {category: 0 for category in list(
+            crime_category_mapping.values()) + ["miscellaneous"]} for month in range(1, 13)}
 
         # Populate the monthly crime data
         for row in results:
@@ -854,6 +874,7 @@ def calculate_monthly_crime_data():
     finally:
         cursor.close()
         conn.close()
+
 
 @app.get("/api/monthly-crime-data")
 def get_monthly_crime_data():
