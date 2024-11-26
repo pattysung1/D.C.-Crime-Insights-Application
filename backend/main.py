@@ -906,10 +906,10 @@ geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
 @app.get("/api/safe-route")
 def calculate_safe_route(start: str, destination: str):
     """
-    Calculate a safe route using Google Maps Directions API.
+    Calculate a safe route using Google Maps Directions API, considering crime locations.
     """
     try:
-        # Geolocate start and destination with explicit country restriction
+        # Step 1: Geolocate start and destination
         start_location = geolocator.geocode(f"{start}, Washington, DC, USA")
         destination_location = geolocator.geocode(f"{destination}, Washington, DC, USA")
 
@@ -919,11 +919,61 @@ def calculate_safe_route(start: str, destination: str):
         start_coords = (start_location.latitude, start_location.longitude)
         destination_coords = (destination_location.latitude, destination_location.longitude)
 
-        # Log geocoded addresses and coordinates
         logging.debug(f"Start address: {start_location.address} -> Coordinates: {start_coords}")
         logging.debug(f"Destination address: {destination_location.address} -> Coordinates: {destination_coords}")
 
-        # Call Google Maps Directions API
+        # Step 2: Fetch recent crimes from the database
+        conn = establish_connection()
+        if conn is None:
+            raise HTTPException(status_code=500, detail="Database connection failed.")
+
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT rl.latitude, rl.longitude, om.offense, rt.report_date_time
+            FROM report_location rl
+            JOIN report_time rt ON rl.ccn = rt.ccn
+            JOIN offense_and_method om ON rt.ccn = om.ccn
+            WHERE rt.report_date_time >= NOW() - INTERVAL 7 DAY;
+              AND rl.latitude IS NOT NULL
+              AND rl.longitude IS NOT NULL;
+        """
+        cursor.execute(query)
+        recent_crimes = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        # Step 3: Identify dangerous areas
+        dangerous_areas = [
+            {
+                "lat": crime["latitude"],
+                "lng": crime["longitude"],
+                "type": crime["offense"],
+                "date": crime["report_date_time"].strftime("%Y-%m-%d %H:%M:%S")
+            }
+            for crime in recent_crimes
+        ]
+        logging.debug(f"Number of dangerous areas fetched: {len(dangerous_areas)}")
+
+        # Step 4: Reduce waypoints to avoid exceeding Google API limit
+        def reduce_waypoints(danger_areas, max_waypoints=20):
+            if len(danger_areas) <= max_waypoints:
+                return danger_areas
+            # Use clustering (e.g., K-means) or select evenly spaced waypoints
+            step = len(danger_areas) // max_waypoints
+            return [danger_areas[i] for i in range(0, len(danger_areas), step)][:max_waypoints]
+
+        reduced_danger_areas = reduce_waypoints(dangerous_areas)
+        logging.debug(f"Reduced number of dangerous areas to: {len(reduced_danger_areas)}")
+
+        # Step 5: Check if Google Maps route intersects with reduced dangerous areas
+        def is_near_danger(lat, lng, danger_areas, radius=500):
+            for danger in danger_areas:
+                distance = geodesic((lat, lng), (danger["lat"], danger["lng"])).meters
+                if distance <= radius:
+                    return True
+            return False
+
+        # Step 6: Call Google Maps Directions API for the initial route
         url = "https://maps.googleapis.com/maps/api/directions/json"
         params = {
             "origin": f"{start_coords[0]},{start_coords[1]}",
@@ -932,8 +982,6 @@ def calculate_safe_route(start: str, destination: str):
             "key": "AIzaSyCHlL5PC4A9jE1rSRTxQT1dcILKiL17V2A"
         }
         response = requests.get(url, params=params)
-        logging.debug(f"Google Maps API Response: {response.text}")  # Log full API response for debugging
-
         if response.status_code != 200:
             raise HTTPException(status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
 
@@ -941,16 +989,41 @@ def calculate_safe_route(start: str, destination: str):
         if data["status"] != "OK":
             raise HTTPException(status_code=500, detail=f"Google API error: {data['status']}")
 
-        # Decode polyline for the route
+        # Decode the initial route polyline
         route_points = polyline.decode(data["routes"][0]["overview_polyline"]["points"])
-        route = [{"lat": lat, "lng": lng} for lat, lng in route_points]
+        initial_route = [{"lat": lat, "lng": lng} for lat, lng in route_points]
 
-        return {"safe_route": route}
+        # Step 7: Modify the route if it intersects with reduced dangerous areas
+        waypoints = []
+        for point in initial_route:
+            if is_near_danger(point["lat"], point["lng"], reduced_danger_areas):
+                logging.debug(f"Dangerous point detected near {point}. Adding waypoint.")
+                waypoints.append(point)
+
+        if waypoints:
+            # Recalculate the route using waypoints to avoid dangerous areas
+            waypoint_str = "|".join([f"{wp['lat']},{wp['lng']}" for wp in waypoints])
+            params["waypoints"] = f"optimize:true|{waypoint_str}"
+            response = requests.get(url, params=params)
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
+
+            data = response.json()
+            if data["status"] != "OK":
+                raise HTTPException(status_code=500, detail=f"Google API error: {data['status']}")
+
+            # Decode the updated route polyline
+            route_points = polyline.decode(data["routes"][0]["overview_polyline"]["points"])
+            final_route = [{"lat": lat, "lng": lng} for lat, lng in route_points]
+        else:
+            final_route = initial_route
+
+        return {"safe_route": final_route, "dangerous_areas": reduced_danger_areas}
+
     except HTTPException as e:
         logging.error(f"HTTPException in calculate_safe_route: {str(e)}")
         raise e
     except Exception as e:
         logging.error(f"Unexpected error in calculate_safe_route: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
