@@ -8,7 +8,7 @@ import PublicSafety from '../pages/PublicSafety';
 import Sidebar from '../components/Sidebar'; // Import Sidebar component
 import ChatBotComponent from '../components/ChatBotComponent';
 import Header from '../components/Header'; // Import Header component
-
+import SafeRouting from '../pages/SafeRouting';
 import '../styles/HomePage.css'; // CSS
 
 const HomePage = () => {
@@ -56,6 +56,7 @@ const HomePage = () => {
           )}
           {activeTab === 'reports' && <Reports filters={filters} />}
           {activeTab === 'CrimePrediction' && <CrimePrediction filters={filters} />}
+          {activeTab === 'SafeRouting' && <SafeRouting />}
           {activeTab === 'PublicSafety' && <PublicSafety />}
           {activeTab === 'settings' && <Settings />}
         </div>

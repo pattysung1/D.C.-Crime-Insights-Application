@@ -28,6 +28,18 @@ from datetime import datetime, timedelta
 import plotly.graph_objs as go
 from scipy.stats import linregress
 
+
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
+from geopy.exc import GeocoderTimedOut
+from geopy.extra.rate_limiter import RateLimiter
+import networkx as nx
+import itertools
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
+# Initialize FastAPI
 app = FastAPI()
 
 # CORS setup
@@ -882,3 +894,63 @@ def get_monthly_crime_data():
     if "error" in monthly_data:
         raise HTTPException(status_code=500, detail=monthly_data["error"])
     return monthly_data
+
+
+# Initialize the geolocator with a user agent and rate limiter
+import requests
+import polyline
+
+geolocator = Nominatim(user_agent="safe_routing_app")
+geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
+
+@app.get("/api/safe-route")
+def calculate_safe_route(start: str, destination: str):
+    """
+    Calculate a safe route using Google Maps Directions API.
+    """
+    try:
+        # Geolocate start and destination with explicit country restriction
+        start_location = geolocator.geocode(f"{start}, Washington, DC, USA")
+        destination_location = geolocator.geocode(f"{destination}, Washington, DC, USA")
+
+        if not start_location or not destination_location:
+            raise HTTPException(status_code=400, detail="Invalid start or destination address.")
+
+        start_coords = (start_location.latitude, start_location.longitude)
+        destination_coords = (destination_location.latitude, destination_location.longitude)
+
+        # Log geocoded addresses and coordinates
+        logging.debug(f"Start address: {start_location.address} -> Coordinates: {start_coords}")
+        logging.debug(f"Destination address: {destination_location.address} -> Coordinates: {destination_coords}")
+
+        # Call Google Maps Directions API
+        url = "https://maps.googleapis.com/maps/api/directions/json"
+        params = {
+            "origin": f"{start_coords[0]},{start_coords[1]}",
+            "destination": f"{destination_coords[0]},{destination_coords[1]}",
+            "mode": "driving",
+            "key": "AIzaSyCHlL5PC4A9jE1rSRTxQT1dcILKiL17V2A"
+        }
+        response = requests.get(url, params=params)
+        logging.debug(f"Google Maps API Response: {response.text}")  # Log full API response for debugging
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
+
+        data = response.json()
+        if data["status"] != "OK":
+            raise HTTPException(status_code=500, detail=f"Google API error: {data['status']}")
+
+        # Decode polyline for the route
+        route_points = polyline.decode(data["routes"][0]["overview_polyline"]["points"])
+        route = [{"lat": lat, "lng": lng} for lat, lng in route_points]
+
+        return {"safe_route": route}
+    except HTTPException as e:
+        logging.error(f"HTTPException in calculate_safe_route: {str(e)}")
+        raise e
+    except Exception as e:
+        logging.error(f"Unexpected error in calculate_safe_route: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
