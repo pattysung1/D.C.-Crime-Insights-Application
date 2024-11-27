@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Plotly from "plotly.js-dist";
+import "../styles/CrimePrediction.css"; // Import custom CSS file for styling
 
 const CrimePrediction = () => {
   const [activeTab, setActiveTab] = useState("linearRegression"); // Tab state
@@ -9,7 +10,7 @@ const CrimePrediction = () => {
   const [loadingGraph, setLoadingGraph] = useState(true);
   const [area, setArea] = useState("ward");
   const [timeframe, setTimeframe] = useState("year");
-  const [predictions, setPredictions] = useState([]);
+  const [predictions, setPredictions] = useState({});
   const [loadingPredictions, setLoadingPredictions] = useState(false);
 
   // Fetch data for the linear regression graph
@@ -34,10 +35,13 @@ const CrimePrediction = () => {
     );
   };
 
+  // Render the linear regression graph
   useEffect(() => {
     if (!loadingGraph && activeTab === "linearRegression") {
       const traces = selectedOffenses.flatMap((offense) => {
         const data = offenseData[offense];
+        if (!data) return []; // Skip offenses with no data
+
         const slopeText = `Slope: ${data.slope.toFixed(2)}`;
 
         return [
@@ -89,18 +93,34 @@ const CrimePrediction = () => {
     }
   }, [selectedOffenses, offenseData, loadingGraph, activeTab]);
 
+  // Fetch advanced predictions for the table
   const fetchPredictions = async () => {
     setLoadingPredictions(true);
     try {
       const response = await axios.get(
         `/api/area-time-crime-prediction?area=${area}&timeframe=${timeframe}`
       );
-      setPredictions(response.data.data || []);
+      setPredictions(response.data.data || {});
     } catch (error) {
       console.error("Error fetching area and time-based predictions:", error);
+      setPredictions({});
     }
     setLoadingPredictions(false);
   };
+
+  // Extract areas and offenses from the predictions
+  let areas = [];
+  let offenses = [];
+
+  if (Object.keys(predictions).length > 0) {
+    areas = Object.keys(predictions);
+    const offensesSet = new Set();
+    areas.forEach((area) => {
+      const offensesInArea = Object.keys(predictions[area]);
+      offensesInArea.forEach((offense) => offensesSet.add(offense));
+    });
+    offenses = Array.from(offensesSet);
+  }
 
   return (
     <div>
@@ -195,19 +215,27 @@ const CrimePrediction = () => {
 
           {loadingPredictions ? (
             <p>Loading predictions...</p>
-          ) : predictions.length > 0 ? (
+          ) : Object.keys(predictions).length > 0 ? (
             <table>
               <thead>
                 <tr>
-                  <th>Offense</th>
-                  <th>Predicted Crimes</th>
+                  <th>Area</th>
+                  {offenses.map((offense) => (
+                    <th key={offense}>{offense}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {predictions.map((prediction, index) => (
-                  <tr key={index}>
-                    <td>{prediction.offense}</td>
-                    <td>{prediction.predicted_crimes}</td>
+                {areas.map((area) => (
+                  <tr key={area}>
+                    <td>{area}</td>
+                    {offenses.map((offense) => (
+                      <td key={offense}>
+                        {predictions[area][offense] !== undefined
+                          ? predictions[area][offense].toFixed(2)
+                          : "N/A"}
+                      </td>
+                    ))}
                   </tr>
                 ))}
               </tbody>

@@ -32,6 +32,7 @@ from datetime import timedelta
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+from pandas.tseries.offsets import MonthBegin, Week
 
 
 from geopy.geocoders import Nominatim
@@ -552,7 +553,11 @@ def get_area_time_crime_prediction(area: str, timeframe: str):
         areas = df_agg['area'].unique()
 
         max_time_period = df_agg['time_period'].max()
-        next_time_period = (max_time_period + 1).to_timestamp()
+        # Determine the appropriate offset based on the frequency
+        if freq == 'W':
+            next_time_period = max_time_period + Week(1)
+        else:
+            next_time_period = max_time_period + MonthBegin(1)
 
         future_month = next_time_period.month
         future_year = next_time_period.year
