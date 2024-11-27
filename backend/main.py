@@ -30,6 +30,8 @@ from scipy.stats import linregress
 from scipy.stats import linregress
 from datetime import timedelta
 import numpy as np
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
 
 
 from geopy.geocoders import Nominatim
@@ -384,12 +386,15 @@ def get_crime_prediction_data():
         # Query to get weekly data for the past 2 years
         query = """
             SELECT offense, 
-                   YEARWEEK(report_date_time, 1) AS week,
-                   COUNT(*) as total_crimes
+                YEARWEEK(report_date_time, 1) AS week,
+                COUNT(*) as total_crimes
             FROM report_time rt
             JOIN offense_and_method om ON rt.ccn = om.ccn
-            WHERE report_date_time >= DATE_SUB(CURDATE(), INTERVAL 2 YEAR)
-              AND YEARWEEK(report_date_time, 1) < YEARWEEK(CURDATE(), 1) - 1
+            WHERE report_date_time >= DATE_ADD(
+                DATE_SUB(CURDATE(), INTERVAL 2 YEAR), 
+                INTERVAL (7 - WEEKDAY(DATE_SUB(CURDATE(), INTERVAL 2 YEAR))) DAY
+            )
+            AND YEARWEEK(report_date_time, 1) < YEARWEEK(CURDATE(), 1) - 1
             GROUP BY offense, YEARWEEK(report_date_time, 1)
         """
         cursor.execute(query)
@@ -465,6 +470,122 @@ def get_crime_prediction_data():
         }
 
     return result
+
+
+@app.get("/api/area-time-crime-prediction")
+def get_area_time_crime_prediction(area: str, timeframe: str):
+    conn = establish_connection()
+    if conn is None:
+        return {"error": "Failed to connect to the database."}
+
+    try:
+        cursor = conn.cursor(dictionary=True)
+
+        # Allowed area options (voting_precinct removed)
+        valid_areas = ["ward", "neighborhood_clusters", "anc", "psa"]
+
+        # Validate area input
+        if area not in valid_areas:
+            return {"error": f"Invalid area. Allowed values are: {', '.join(valid_areas)}"}
+
+        timeframe_mapping = {
+            "week": "1 WEEK",
+            "month": "1 MONTH",
+            "6 months": "6 MONTH",
+            "year": "1 YEAR",
+            "two years": "2 YEAR",
+            "five years": "5 YEAR"
+        }
+
+        if timeframe not in timeframe_mapping:
+            return {"error": "Invalid timeframe"}
+
+        # Build query based on area and timeframe
+        query = f"""
+            SELECT offense, rt.report_date_time, rl.{area} AS area
+            FROM report_time rt
+            JOIN report_location rl ON rt.ccn = rl.ccn
+            JOIN offense_and_method om ON rt.ccn = om.ccn
+            WHERE report_date_time >= DATE_SUB(CURDATE(), INTERVAL {timeframe_mapping[timeframe]})
+            AND rl.{area} IS NOT NULL
+        """
+        cursor.execute(query)
+        data = cursor.fetchall()
+
+        if not data:
+            return {"error": "No data available for the selected criteria"}
+
+        df = pd.DataFrame(data)
+
+        # Convert report_date_time to datetime
+        df['report_date_time'] = pd.to_datetime(df['report_date_time'])
+
+        # Create time_period based on timeframe
+        if timeframe == 'week':
+            freq = 'W'
+        else:
+            freq = 'M'
+
+        df['time_period'] = df['report_date_time'].dt.to_period(freq).apply(lambda r: r.start_time)
+
+        # Aggregate crime counts
+        df_agg = df.groupby(['offense', 'area', 'time_period']).size().reset_index(name='crime_count')
+
+        # Feature engineering
+        df_agg['month'] = df_agg['time_period'].dt.month
+        df_agg['year'] = df_agg['time_period'].dt.year
+
+        # Prepare features and target
+        features = df_agg[['offense', 'area', 'month', 'year']]
+        features = pd.get_dummies(features, columns=['offense', 'area'], drop_first=False)
+        target = df_agg['crime_count']
+
+        # Train-test split
+        X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
+
+        # Train Random Forest
+        model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(X_train, y_train)
+
+        # Prepare future data for prediction
+        offenses = df_agg['offense'].unique()
+        areas = df_agg['area'].unique()
+
+        max_time_period = df_agg['time_period'].max()
+        next_time_period = (max_time_period + 1).to_timestamp()
+
+        future_month = next_time_period.month
+        future_year = next_time_period.year
+
+        from itertools import product
+
+        future_data = pd.DataFrame(list(product(offenses, areas)), columns=['offense', 'area'])
+        future_data['month'] = future_month
+        future_data['year'] = future_year
+
+        # One-hot encode future data
+        future_features = pd.get_dummies(future_data, columns=['offense', 'area'], drop_first=False)
+
+        # Ensure future_features has the same columns as training features
+        for col in features.columns:
+            if col not in future_features.columns:
+                future_features[col] = 0
+        future_features = future_features[features.columns]
+
+        # Predict future crimes
+        future_predictions = model.predict(future_features)
+        future_data['predicted_crimes'] = future_predictions
+
+        # Prepare response
+        result = future_data.pivot(index='area', columns='offense', values='predicted_crimes')
+        return {"data": result.to_dict(orient='index')}
+
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+    finally:
+        cursor.close()
+        conn.close()
+
 
 class CrimeReport(BaseModel):
     ccn: str  # Ensure CCN is a string
