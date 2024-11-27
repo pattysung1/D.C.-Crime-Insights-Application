@@ -27,6 +27,9 @@ from langchain_core.output_parsers import StrOutputParser
 from datetime import datetime, timedelta
 import plotly.graph_objs as go
 from scipy.stats import linregress
+from scipy.stats import linregress
+from datetime import timedelta
+import numpy as np
 
 
 from geopy.geocoders import Nominatim
@@ -386,6 +389,7 @@ def get_crime_prediction_data():
             FROM report_time rt
             JOIN offense_and_method om ON rt.ccn = om.ccn
             WHERE report_date_time >= DATE_SUB(CURDATE(), INTERVAL 2 YEAR)
+              AND YEARWEEK(report_date_time, 1) < YEARWEEK(CURDATE(), 1) - 1
             GROUP BY offense, YEARWEEK(report_date_time, 1)
         """
         cursor.execute(query)
@@ -406,8 +410,7 @@ def get_crime_prediction_data():
     # Convert 'week' to actual dates for x-axis
     df['week_start_date'] = df['week'].apply(
         lambda yw: datetime.strptime(f"{yw}1", "%Y%W%w"))
-
-    # Define colors for each offense type
+    
     colors = {
         "theft/other": "red",
         "theft f/auto": "blue",
@@ -420,7 +423,6 @@ def get_crime_prediction_data():
         "arson": "cyan"
     }
 
-    # Prepare JSON data
     result = {}
     for offense in df['offense'].unique():
         offense_data = df[df['offense'] == offense]
@@ -430,25 +432,39 @@ def get_crime_prediction_data():
             offense_data['week_start_date'].map(datetime.toordinal),
             offense_data['total_crimes']
         )
-        regression_line = slope * \
-            offense_data['week_start_date'].map(datetime.toordinal) + intercept
+        regression_line = slope * offense_data['week_start_date'].map(datetime.toordinal) + intercept
+
+        # Predict future crimes for the next 12 weeks
+        future_weeks = pd.date_range(
+            start=offense_data['week_start_date'].max() + timedelta(weeks=1),
+            periods=12,
+            freq='W-MON'
+        )
+        future_crimes = slope * future_weeks.map(datetime.toordinal) + intercept
+
+        # Use the same color for prediction line as the associated offense
+        offense_color = colors.get(offense, "black")
 
         result[offense] = {
             "points": {
                 "x": offense_data['week_start_date'].tolist(),
                 "y": offense_data['total_crimes'].tolist(),
-                # Default to black if color not in map
-                "color": colors.get(offense, "black")
+                "color": offense_color
             },
             "regression": {
                 "x": offense_data['week_start_date'].tolist(),
                 "y": regression_line.tolist(),
-                "color": colors.get(offense, "black")
-            }
+                "color": offense_color
+            },
+            "future": {
+                "x": future_weeks.tolist(),
+                "y": future_crimes.tolist(),
+                "color": offense_color  # Same color for prediction line
+            },
+            "slope": slope
         }
 
     return result
-
 
 class CrimeReport(BaseModel):
     ccn: str  # Ensure CCN is a string
