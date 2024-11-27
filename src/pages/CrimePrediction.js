@@ -183,11 +183,15 @@ const CrimePrediction = () => {
 
       {activeTab === "advancedPredictions" && (
         <>
-          <h2>Advanced Predictions</h2>
-          <div>
+          <h2>Predict Number of Crimes by Area and Time Frame</h2>
+          <div className="prediction-filters">
             <label>
               Area:
-              <select value={area} onChange={(e) => setArea(e.target.value)}>
+              <select
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+                className="dropdown"
+              >
                 <option value="ward">Ward</option>
                 <option value="neighborhood_clusters">
                   Neighborhood Clusters
@@ -201,6 +205,7 @@ const CrimePrediction = () => {
               <select
                 value={timeframe}
                 onChange={(e) => setTimeframe(e.target.value)}
+                className="dropdown"
               >
                 <option value="week">Week</option>
                 <option value="month">Month</option>
@@ -210,36 +215,44 @@ const CrimePrediction = () => {
                 <option value="five years">Five Years</option>
               </select>
             </label>
-            <button onClick={fetchPredictions}>Get Predictions</button>
+            <button onClick={fetchPredictions} className="fetch-button">
+              Get Predictions
+            </button>
           </div>
 
           {loadingPredictions ? (
             <p>Loading predictions...</p>
           ) : Object.keys(predictions).length > 0 ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>Area</th>
-                  {offenses.map((offense) => (
-                    <th key={offense}>{offense}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {areas.map((area) => (
-                  <tr key={area}>
-                    <td>{area}</td>
+            <div className="table-container">
+              <table className="predictions-table">
+                <thead>
+                  <tr>
+                    <th>Area</th>
                     {offenses.map((offense) => (
-                      <td key={offense}>
-                        {predictions[area][offense] !== undefined
-                          ? predictions[area][offense].toFixed(2)
-                          : "N/A"}
-                      </td>
+                      <th key={offense}>{offense}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {areas.map((area) => (
+                    <tr key={area}>
+                      <td className="area-cell">{area}</td>
+                      {offenses.map((offense) => (
+                        <td
+                          key={offense}
+                          className="crime-cell"
+                          title={`Predicted crimes for ${offense} in ${area}`}
+                        >
+                          {predictions[area][offense] !== undefined
+                            ? predictions[area][offense].toFixed(2)
+                            : "N/A"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <p>No predictions available</p>
           )}
