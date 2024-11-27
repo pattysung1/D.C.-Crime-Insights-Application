@@ -32,6 +32,8 @@ const CrimePrediction = () => {
     if (!loading) {
       const traces = selectedOffenses.flatMap((offense) => {
         const data = offenseData[offense];
+        const slopeText = `Slope: ${data.slope.toFixed(2)}`;
+
         return [
           {
             x: data.points.x,
@@ -40,6 +42,10 @@ const CrimePrediction = () => {
             type: "scatter",
             name: `${offense} (Points)`,
             marker: { color: data.points.color },
+            hovertext: data.points.x.map(
+              (date, i) => `Week: ${date}<br>Total Crimes: ${data.points.y[i]}`
+            ),
+            hoverinfo: "text",
           },
           {
             x: data.regression.x,
@@ -47,13 +53,30 @@ const CrimePrediction = () => {
             mode: "lines",
             name: `${offense} (Trend Line)`,
             line: { color: data.regression.color },
+            hovertext: data.regression.x.map(() => slopeText),
+            hoverinfo: "text",
+          },
+          {
+            x: data.future.x,
+            y: data.future.y,
+            mode: "lines",
+            name: `${offense} (Prediction)`,
+            line: { dash: "dot", color: data.future.color }, // Prediction line style
+            hovertext: data.future.x.map((date, i) => {
+              const predictedCrime =
+                data.future.y[i] !== undefined
+                  ? data.future.y[i].toFixed(0)
+                  : "N/A";
+              return `Week: ${date}<br>Predicted Crimes: ${predictedCrime}`;
+            }),
+            hoverinfo: "text",
           },
         ];
       });
 
       Plotly.react("crimeChart", traces, {
         title:
-          "Weekly Crime Totals with Linear Regression by Offense (Past 2 Years)",
+          "Linear Regression Graph of Weekly Crime Totals by Offense (Past 2 Years) and Future Predictions",
         xaxis: { title: "Week", tickformat: "%Y-%m-%d" },
         yaxis: { title: "Total Crimes" },
       });
