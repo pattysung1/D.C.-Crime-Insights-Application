@@ -17,6 +17,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 <li className={activeTab === 'CrimePrediction' ? 'active' : ''} onClick={() => setActiveTab('CrimePrediction')}>
                     Crime Prediction
                 </li>
+                <li className={`sidebar-item ${activeTab === 'SafeRouting' ? 'active' : ''}`}onClick={() => setActiveTab('SafeRouting')}>
+                    Safe Routing
+                </li>
                 <li className={activeTab === 'PublicSafety' ? 'active' : ''} onClick={() => setActiveTab('PublicSafety')}>
                     Public Safety Resources
                 </li>

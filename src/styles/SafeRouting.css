@@ -1,0 +1,42 @@
+.safe-routing-container {
+    padding: 20px;
+    background-color: #f9f9f9;
+  }
+  
+  .input-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .input-container input {
+    padding: 10px;
+    font-size: 16px;
+    flex: 1;
+  }
+  
+  .input-container button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .input-container button:hover {
+    background-color: #45a049;
+  }
+  
+  .error {
+    color: red;
+    font-weight: bold;
+  }
+
+  .input-group label {
+    color: black; 
+    font-weight: bold;
+    font-size: 14px;
+  }
+  

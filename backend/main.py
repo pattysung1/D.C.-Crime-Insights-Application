@@ -1,12 +1,8 @@
-import httpx
-import json
 from fastapi import FastAPI, Query, HTTPException
 from collections import Counter
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
-import os
 import mysql.connector
-import reports
 from typing import List
 from pydantic import BaseModel
 import pdfkit
@@ -14,25 +10,42 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
-from langchain_openai import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
+
 from pydantic import BaseModel
 import mysql.connector
 from langchain_community.utilities import SQLDatabase
 from langchain_core.output_parsers import StrOutputParser
-from datetime import datetime, timedelta
-import plotly.graph_objs as go
-from scipy.stats import linregress
 
+from datetime import datetime, timedelta
+from scipy.stats import linregress
+from scipy.stats import linregress
+from datetime import timedelta
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+import numpy as np
+import xgboost as xgb
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
+from geopy.extra.rate_limiter import RateLimiter
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
+# Initialize FastAPI
 app = FastAPI()
 
 # CORS setup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://54.225.57.155"], # Your React app's origin
+    allow_origins=["http://localhost:3000",
+                   "http://54.225.57.155"],  # Your React app's origin
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
     allow_headers=["*"],  # Allow all headers
@@ -63,7 +76,7 @@ def calculate_trends():
     conn = establish_connection()
     if conn is None:
         return {"error": "Failed to connect to the database."}
-    
+
     trends_data = []
     try:
         cursor = conn.cursor(dictionary=True)
@@ -95,7 +108,6 @@ def calculate_trends():
                     crime_summary['assault with weapon'] = row['count']
                 else:
                     crime_summary[row['offense']] = row['count']
-                
 
             trends_data.append(crime_summary)
 
@@ -144,32 +156,38 @@ def analyze_data():
         offense_counter = Counter(feature["offense"] for feature in features)
 
         # Determine top crime type
-        top_crime_type = offense_counter.most_common(1)[0] if offense_counter else ("N/A", 0)
+        top_crime_type = offense_counter.most_common(
+            1)[0] if offense_counter else ("N/A", 0)
 
         # Calculate count by ward (High Crime Zone)
         ward_counter = Counter(feature["ward"] for feature in features)
-        high_crime_zone = ward_counter.most_common(1)[0] if ward_counter else ("N/A", 0)
+        high_crime_zone = ward_counter.most_common(
+            1)[0] if ward_counter else ("N/A", 0)
 
         # Calculate count by method of crime
         method_counter = Counter(feature["method"] for feature in features)
-        top_method = method_counter.most_common(1)[0] if method_counter else ("N/A", 0)
+        top_method = method_counter.most_common(
+            1)[0] if method_counter else ("N/A", 0)
 
         # Calculate count by shift (time of crime)
         shift_counter = Counter(feature["shift"] for feature in features)
-        top_shift = shift_counter.most_common(1)[0] if shift_counter else ("N/A", 0)
+        top_shift = shift_counter.most_common(
+            1)[0] if shift_counter else ("N/A", 0)
 
         # Generate trends data from the MySQL database
         trends_data = calculate_trends()
 
         # Calculate distribution data for the last 30 days
-        distribution_data = {category: 0 for category in crime_category_mapping.values()}
+        distribution_data = {
+            category: 0 for category in crime_category_mapping.values()}
         for feature in features:
             category = crime_category_mapping.get(feature["offense"])
             if category:
                 distribution_data[category] += 1
             else:
                 # Add a "miscellaneous" category if the offense isn't mapped
-                distribution_data["miscellaneous"] = distribution_data.get("miscellaneous", 0) + 1
+                distribution_data["miscellaneous"] = distribution_data.get(
+                    "miscellaneous", 0) + 1
 
         return {
             "dashboard": {
@@ -195,9 +213,11 @@ def analyze_data():
         cursor.close()
         conn.close()
 
+
 @app.get("/api/test")
 async def test_endpoint():
     return {"status": "test endpoint working"}
+
 
 @app.get("/api/crime-data")
 def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = None, endDate: str = None):
@@ -207,7 +227,8 @@ def get_crime_data(crimeType: str = None, zone: str = None, startDate: str = Non
 
     try:
         if not startDate:
-            startDate = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+            startDate = (datetime.now() - timedelta(days=30)
+                         ).strftime("%Y-%m-%d")
         if not endDate:
             endDate = datetime.now().strftime("%Y-%m-%d")
 
@@ -297,6 +318,7 @@ def get_crime_types():
         cursor.close()
         conn.close()
 
+
 @app.get("/api/crime-zones")
 def get_crime_zones():
     conn = establish_connection()
@@ -358,11 +380,15 @@ def get_crime_prediction_data():
         # Query to get weekly data for the past 2 years
         query = """
             SELECT offense, 
-                   YEARWEEK(report_date_time, 1) AS week,
-                   COUNT(*) as total_crimes
+                YEARWEEK(report_date_time, 1) AS week,
+                COUNT(*) as total_crimes
             FROM report_time rt
             JOIN offense_and_method om ON rt.ccn = om.ccn
-            WHERE report_date_time >= DATE_SUB(CURDATE(), INTERVAL 2 YEAR)
+            WHERE report_date_time >= DATE_ADD(
+                DATE_SUB(CURDATE(), INTERVAL 2 YEAR), 
+                INTERVAL (7 - WEEKDAY(DATE_SUB(CURDATE(), INTERVAL 2 YEAR))) DAY
+            )
+            AND YEARWEEK(report_date_time, 1) < YEARWEEK(CURDATE(), 1)
             GROUP BY offense, YEARWEEK(report_date_time, 1)
         """
         cursor.execute(query)
@@ -379,16 +405,16 @@ def get_crime_prediction_data():
 
     # Convert the data into a DataFrame
     df = pd.DataFrame(data)
-    
-    # Convert 'week' to actual dates for x-axis
-    df['week_start_date'] = df['week'].apply(lambda yw: datetime.strptime(f"{yw}1", "%Y%W%w"))
 
-    # Define colors for each offense type
+    # Convert 'week' to actual dates for x-axis
+    df['week_start_date'] = df['week'].apply(
+        lambda yw: datetime.strptime(f"{yw}1", "%Y%W%w"))
+    
     colors = {
         "theft/other": "red",
         "theft f/auto": "blue",
         "assault w/dangerous weapon": "orange",
-        "homicide": "yellow",
+        "homicide": "#FFCC00", # Dark Yellow
         "motor vehicle theft": "green",
         "burglary": "purple",
         "robbery": "pink",
@@ -396,7 +422,6 @@ def get_crime_prediction_data():
         "arson": "cyan"
     }
 
-    # Prepare JSON data
     result = {}
     for offense in df['offense'].unique():
         offense_data = df[df['offense'] == offense]
@@ -408,20 +433,176 @@ def get_crime_prediction_data():
         )
         regression_line = slope * offense_data['week_start_date'].map(datetime.toordinal) + intercept
 
+        # Predict future crimes for the next 12 weeks
+        future_weeks = pd.date_range(
+            start=offense_data['week_start_date'].max() + timedelta(weeks=1),
+            periods=12,
+            freq='W-MON'
+        )
+        future_crimes = slope * future_weeks.map(datetime.toordinal) + intercept
+
+        # Use the same color for prediction line as the associated offense
+        offense_color = colors.get(offense, "black")
+
         result[offense] = {
             "points": {
                 "x": offense_data['week_start_date'].tolist(),
                 "y": offense_data['total_crimes'].tolist(),
-                "color": colors.get(offense, "black")  # Default to black if color not in map
+                "color": offense_color
             },
             "regression": {
                 "x": offense_data['week_start_date'].tolist(),
                 "y": regression_line.tolist(),
-                "color": colors.get(offense, "black")
-            }
+                "color": offense_color
+            },
+            "future": {
+                "x": future_weeks.tolist(),
+                "y": future_crimes.tolist(),
+                "color": offense_color  # Same color for prediction line
+            },
+            "slope": slope
         }
 
     return result
+
+
+@app.get("/api/area-time-crime-prediction")
+def get_area_time_crime_prediction(area: str, timeframe: str):
+    conn = establish_connection()
+    if conn is None:
+        return {"error": "Failed to connect to the database."}
+    try:
+        cursor = conn.cursor(dictionary=True)
+
+        # Validate area input
+        valid_areas = ["ward", "neighborhood_clusters", "anc", "psa"]
+        if area not in valid_areas:
+            return {"error": f"Invalid area. Allowed values are: {', '.join(valid_areas)}"}
+
+        timeframe_mapping = {
+            "week": "1 WEEK",
+            "month": "1 MONTH",
+            "6 months": "6 MONTH",
+            "year": "1 YEAR",
+            "two years": "2 YEAR",
+            "five years": "5 YEAR"
+        }
+        if timeframe not in timeframe_mapping:
+            return {"error": "Invalid timeframe"}
+
+        # Fetch data
+        query = f"""
+            SELECT offense, rt.report_date_time, rl.{area} AS area
+            FROM report_time rt
+            JOIN report_location rl ON rt.ccn = rl.ccn
+            JOIN offense_and_method om ON rt.ccn = om.ccn
+            WHERE report_date_time >= DATE_SUB(CURDATE(), INTERVAL {timeframe_mapping[timeframe]})
+            AND rl.{area} IS NOT NULL
+        """
+        cursor.execute(query)
+        data = cursor.fetchall()
+
+        if not data:
+            return {"error": "No data available for the selected criteria"}
+
+        df = pd.DataFrame(data)
+        df['report_date_time'] = pd.to_datetime(df['report_date_time'])
+
+        # Feature Engineering
+        freq = 'W' if timeframe == 'week' else 'M'
+        df['time_period'] = df['report_date_time'].dt.to_period(freq).apply(lambda r: r.start_time)
+        df_agg = df.groupby(['offense', 'area', 'time_period']).size().reset_index(name='crime_count')
+
+        # Add historical averages and lags
+        df_agg = df_agg.sort_values('time_period')
+        df_agg['lag_1'] = df_agg.groupby(['offense', 'area'])['crime_count'].shift(1).fillna(0)
+        df_agg['lag_2'] = df_agg.groupby(['offense', 'area'])['crime_count'].shift(2).fillna(0)
+        df_agg['lag_3'] = df_agg.groupby(['offense', 'area'])['crime_count'].shift(3).fillna(0)
+
+        # Prepare Features and Target
+        features = ['offense', 'area', 'lag_1', 'lag_2', 'lag_3']
+        X = pd.get_dummies(df_agg[features], columns=['offense', 'area'], drop_first=False)
+        y = df_agg['crime_count']
+
+        # Train/Test Split and Model Training
+        train_size = int(len(X) * 0.8)
+        X_train, X_test = X.iloc[:train_size], X.iloc[train_size:]
+        y_train, y_test = y.iloc[:train_size], y.iloc[train_size:]
+
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('model', xgb.XGBRegressor(
+                n_estimators=500,
+                learning_rate=0.1,
+                max_depth=6,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                random_state=42,
+                n_jobs=-1
+            ))
+        ])
+        pipeline.fit(X_train, y_train)
+
+        # Testing the accuracy of the model
+        test_model_accuracy(pipeline, X_test, y_test)
+
+        # Predict Future Crimes
+        future_data = df_agg.copy()
+        future_data['predicted_crimes'] = pipeline.predict(X)
+
+        # Replace invalid float values
+        future_data['predicted_crimes'] = future_data['predicted_crimes'].apply(
+            lambda x: 0 if np.isnan(x) or np.isinf(x) else x
+        )
+
+        # Pivot Table for Response
+        result = future_data.pivot_table(
+            index='area', columns='offense', values='predicted_crimes', aggfunc='sum'
+        )
+
+        # Replace invalid values in the final response
+        result = result.replace([np.inf, -np.inf], 0).fillna(0)
+
+        # Convert to JSON-friendly format
+        return {"data": result.round(2).to_dict(orient='index')}
+
+    except mysql.connector.Error as err:
+        return {"error": str(err)}
+    except Exception as e:
+        return {"error": f"Unexpected error: {str(e)}"}
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def test_model_accuracy(pipeline, X_test, y_test):
+    """
+    Tests the accuracy of the trained model.
+    """
+    # Predict using the model
+    y_pred = pipeline.predict(X_test)
+    
+    # Replace invalid predictions with 0
+    y_pred = np.where(np.isnan(y_pred) | np.isinf(y_pred), 0, y_pred)
+
+    # Calculate metrics
+    mae = mean_absolute_error(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+    rmse = np.sqrt(mse)
+    r2 = r2_score(y_test, y_pred)
+    
+    # Print and return results
+    print(f"Mean Absolute Error (MAE): {mae:.2f}")
+    print(f"Mean Squared Error (MSE): {mse:.2f}")
+    print(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
+    print(f"R² Score: {r2:.2f}")
+    
+    return {
+        "MAE": mae,
+        "MSE": mse,
+        "RMSE": rmse,
+        "R2": r2
+    }
 
 class CrimeReport(BaseModel):
     ccn: str  # Ensure CCN is a string
@@ -706,28 +887,30 @@ def generate_report(name: str, start_date: str, end_date: str, location: str):
     return {"message": "Report generated successfully", "file_path": file_path}
 
 
-
-
-
 # for ChatBot
 # Define a class to receive user messages
 class ChatRequest(BaseModel):
     message: str
 
+
 OPENAI_API_KEY = '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'
 
 # Initialize database connection
+
+
 def init_database():
     user = "admin"
     password = "capstonegroup10"
     host = "database-crime-dc.cxqaw406cjk5.us-east-1.rds.amazonaws.com"
     port = 3306
     database = "crime_database"
-    
+
     db_uri = f"mysql+mysqlconnector://{user}:{password}@{host}:{port}/{database}"
     return SQLDatabase.from_uri(db_uri)
 
 # Define AI response logic
+
+
 def get_sql_chain(db):
     template = """
     You are a data analyst at a company. You are interacting with a user who is asking you questions about the company's database.
@@ -747,13 +930,14 @@ def get_sql_chain(db):
 
     def get_schema(_):
         return db.get_table_info()
-  
+
     return (
         RunnablePassthrough.assign(schema=get_schema)
         | prompt
         | llm
         | StrOutputParser()
     )
+
 
 @app.post("/api/chatbot")
 async def chatbot(request: ChatRequest):
@@ -764,9 +948,10 @@ async def chatbot(request: ChatRequest):
 
     # Generate a response
     response = get_response(user_message, db, [])
-    
+
     return {"response": response}
-    
+
+
 def get_response(user_query: str, db: SQLDatabase, chat_history: list):
     sql_chain = get_sql_chain(db)
 
@@ -779,22 +964,22 @@ def get_response(user_query: str, db: SQLDatabase, chat_history: list):
     SQL Query: <SQL>{query}</SQL>
     User question: {question}
     SQL Response: {response}"""
-  
+
     prompt = ChatPromptTemplate.from_template(template)
-    
+
     # Pass API key here
     llm = ChatOpenAI(model="gpt-4-0125-preview", openai_api_key=OPENAI_API_KEY)
-  
+
     chain = (
         RunnablePassthrough.assign(query=sql_chain).assign(
-          schema=lambda _: db.get_table_info(),
-          response=lambda vars: db.run(vars["query"]),
+            schema=lambda _: db.get_table_info(),
+            response=lambda vars: db.run(vars["query"]),
         )
         | prompt
         | llm
         | StrOutputParser()
     )
-  
+
     return chain.invoke({
         "question": user_query,
         "chat_history": chat_history,
@@ -806,10 +991,10 @@ def calculate_monthly_crime_data():
     conn = establish_connection()
     if conn is None:
         return {"error": "Failed to connect to the database."}
-    
+
     try:
         cursor = conn.cursor(dictionary=True)
-        
+
         # Query to get crime counts grouped by offense and month
         query = """
             SELECT 
@@ -829,7 +1014,8 @@ def calculate_monthly_crime_data():
 
         # Initialize monthly data dictionary with each month and crime types
         # monthly_crime_data = {month: {category: 0 for category in crime_category_mapping.values()} for month in range(1, 13)}
-        monthly_crime_data = {month: {category: 0 for category in list(crime_category_mapping.values()) + ["miscellaneous"]} for month in range(1, 13)}
+        monthly_crime_data = {month: {category: 0 for category in list(
+            crime_category_mapping.values()) + ["miscellaneous"]} for month in range(1, 13)}
 
         # Populate the monthly crime data
         for row in results:
@@ -855,9 +1041,143 @@ def calculate_monthly_crime_data():
         cursor.close()
         conn.close()
 
+
 @app.get("/api/monthly-crime-data")
 def get_monthly_crime_data():
     monthly_data = calculate_monthly_crime_data()
     if "error" in monthly_data:
         raise HTTPException(status_code=500, detail=monthly_data["error"])
     return monthly_data
+
+
+# Initialize the geolocator with a user agent and rate limiter
+import requests
+import polyline
+
+geolocator = Nominatim(user_agent="safe_routing_app")
+geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
+
+@app.get("/api/safe-route")
+def calculate_safe_route(start: str, destination: str):
+    """
+    Calculate a safe route using Google Maps Directions API, considering crime locations.
+    """
+    try:
+        # Step 1: Geolocate start and destination
+        start_location = geolocator.geocode(f"{start}, Washington, DC, USA")
+        destination_location = geolocator.geocode(f"{destination}, Washington, DC, USA")
+
+        if not start_location or not destination_location:
+            raise HTTPException(status_code=400, detail="Invalid start or destination address.")
+
+        start_coords = (start_location.latitude, start_location.longitude)
+        destination_coords = (destination_location.latitude, destination_location.longitude)
+
+        logging.debug(f"Start address: {start_location.address} -> Coordinates: {start_coords}")
+        logging.debug(f"Destination address: {destination_location.address} -> Coordinates: {destination_coords}")
+
+        # Step 2: Fetch recent crimes from the database
+        conn = establish_connection()
+        if conn is None:
+            raise HTTPException(status_code=500, detail="Database connection failed.")
+
+        cursor = conn.cursor(dictionary=True)
+        query = """
+            SELECT rl.latitude, rl.longitude, om.offense, rt.report_date_time
+            FROM report_location rl
+            JOIN report_time rt ON rl.ccn = rt.ccn
+            JOIN offense_and_method om ON rt.ccn = om.ccn
+            WHERE rt.report_date_time >= NOW() - INTERVAL 7 DAY;
+              AND rl.latitude IS NOT NULL
+              AND rl.longitude IS NOT NULL;
+        """
+        cursor.execute(query)
+        recent_crimes = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        # Step 3: Identify dangerous areas
+        dangerous_areas = [
+            {
+                "lat": crime["latitude"],
+                "lng": crime["longitude"],
+                "type": crime["offense"],
+                "date": crime["report_date_time"].strftime("%Y-%m-%d %H:%M:%S")
+            }
+            for crime in recent_crimes
+        ]
+        logging.debug(f"Number of dangerous areas fetched: {len(dangerous_areas)}")
+
+        # Step 4: Reduce waypoints to avoid exceeding Google API limit
+        def reduce_waypoints(danger_areas, max_waypoints=20):
+            if len(danger_areas) <= max_waypoints:
+                return danger_areas
+            # Use clustering (e.g., K-means) or select evenly spaced waypoints
+            step = len(danger_areas) // max_waypoints
+            return [danger_areas[i] for i in range(0, len(danger_areas), step)][:max_waypoints]
+
+        reduced_danger_areas = reduce_waypoints(dangerous_areas)
+        logging.debug(f"Reduced number of dangerous areas to: {len(reduced_danger_areas)}")
+
+        # Step 5: Check if Google Maps route intersects with reduced dangerous areas
+        def is_near_danger(lat, lng, danger_areas, radius=500):
+            for danger in danger_areas:
+                distance = geodesic((lat, lng), (danger["lat"], danger["lng"])).meters
+                if distance <= radius:
+                    return True
+            return False
+
+        # Step 6: Call Google Maps Directions API for the initial route
+        url = "https://maps.googleapis.com/maps/api/directions/json"
+        params = {
+            "origin": f"{start_coords[0]},{start_coords[1]}",
+            "destination": f"{destination_coords[0]},{destination_coords[1]}",
+            "mode": "driving",
+            "key": "AIzaSyCHlL5PC4A9jE1rSRTxQT1dcILKiL17V2A"
+        }
+        response = requests.get(url, params=params)
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
+
+        data = response.json()
+        if data["status"] != "OK":
+            raise HTTPException(status_code=500, detail=f"Google API error: {data['status']}")
+
+        # Decode the initial route polyline
+        route_points = polyline.decode(data["routes"][0]["overview_polyline"]["points"])
+        initial_route = [{"lat": lat, "lng": lng} for lat, lng in route_points]
+
+        # Step 7: Modify the route if it intersects with reduced dangerous areas
+        waypoints = []
+        for point in initial_route:
+            if is_near_danger(point["lat"], point["lng"], reduced_danger_areas):
+                logging.debug(f"Dangerous point detected near {point}. Adding waypoint.")
+                waypoints.append(point)
+
+        if waypoints:
+            # Recalculate the route using waypoints to avoid dangerous areas
+            waypoint_str = "|".join([f"{wp['lat']},{wp['lng']}" for wp in waypoints])
+            params["waypoints"] = f"optimize:true|{waypoint_str}"
+            response = requests.get(url, params=params)
+            if response.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
+
+            data = response.json()
+            if data["status"] != "OK":
+                raise HTTPException(status_code=500, detail=f"Google API error: {data['status']}")
+
+            # Decode the updated route polyline
+            route_points = polyline.decode(data["routes"][0]["overview_polyline"]["points"])
+            final_route = [{"lat": lat, "lng": lng} for lat, lng in route_points]
+        else:
+            final_route = initial_route
+
+        return {"safe_route": final_route, "dangerous_areas": reduced_danger_areas}
+
+    except HTTPException as e:
+        logging.error(f"HTTPException in calculate_safe_route: {str(e)}")
+        raise e
+    except Exception as e:
+        logging.error(f"Unexpected error in calculate_safe_route: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
