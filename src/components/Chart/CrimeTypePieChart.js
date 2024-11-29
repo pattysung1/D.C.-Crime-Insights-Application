@@ -8,59 +8,60 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import "../../styles/CrimeTypePieChart.css"; // Import styles
+import { CRIME_TYPES_CONFIG } from '../../utils/chartConfig';
 
 const CrimeTypePieChart = ({ crimeTypeData = [] }) => {
-  // Define colors for different crime types
-  const COLORS = [
-    "#0088FE",
-    "#00C49F",
-    "#FFBB28",
-    "#FF8042",
-    "#FF5733",
-    "#A133FF",
-    "#00008B",
-    "#FF9633",
-    "#FF33A1",
-  ];
+  // Normalize crime type names and filter out zero values
+  const filteredCrimeData = Array.isArray(crimeTypeData)
+    ? crimeTypeData
+      .map(crime => ({
+        ...crime,
+        // Normalize the type name
+        type: crime.type === "theft auto" ? "theft (auto)" : crime.type
+      }))
+      .filter(crime => crime.value > 0)
+      .sort((a, b) => {
+        return CRIME_TYPES_CONFIG.order.indexOf(a.type) - CRIME_TYPES_CONFIG.order.indexOf(b.type);
+      })
+    : [];
 
-  // Ensure `crimeTypeData` is an array, and provide a fallback if it is not
-  const safeCrimeTypeData = Array.isArray(crimeTypeData) ? crimeTypeData : [];
-
-  // Debugging: Log the data to verify its structure
-  console.log("crimeTypeData:", safeCrimeTypeData);
+  // Debugging: Log the filtered data
+  console.log("Filtered crimeTypeData:", filteredCrimeData);
 
   return (
     <div className="crime-type-pie-chart-container">
       <h2 className="crime-type-pie-chart-title">
         Crime Types Distribution (Past 30 Days)
       </h2>
-      {/* Check if there is any data to render */}
-      {safeCrimeTypeData.length > 0 ? (
+      {filteredCrimeData.length > 0 ? (
         <ResponsiveContainer width="100%" height={400}>
-          <PieChart>
+          <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
             <Pie
-              data={safeCrimeTypeData}
+              data={filteredCrimeData}
               dataKey="value"
               nameKey="type"
               cx="50%"
               cy="50%"
-              outerRadius={150}
+              outerRadius={140}
+              innerRadius={0}
               fill="#8884d8"
-              label
+              label={{
+                position: 'outside',
+                offset: 20
+              }}
             >
-              {safeCrimeTypeData.map((entry, index) => (
+              {filteredCrimeData.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={COLORS[index % COLORS.length]}
+                  fill={CRIME_TYPES_CONFIG.colors[entry.type]}
                 />
               ))}
             </Pie>
             <Tooltip />
-            <Legend />
+            <Legend verticalAlign="bottom" height={36} />
           </PieChart>
         </ResponsiveContainer>
       ) : (
-        // Message to display when there is no data
         <p>No data available to display the chart</p>
       )}
     </div>
