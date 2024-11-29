@@ -113,7 +113,12 @@ const CrimePrediction = () => {
   let offenses = [];
 
   if (Object.keys(predictions).length > 0) {
-    areas = Object.keys(predictions);
+    areas = Object.keys(predictions).sort((a, b) => {
+      const clusterNumberA = parseInt(a.replace(/\D/g, ""), 10); // Extract numbers from strings
+      const clusterNumberB = parseInt(b.replace(/\D/g, ""), 10);
+
+      return clusterNumberA - clusterNumberB; // Sort numerically
+    });
     const offensesSet = new Set();
     areas.forEach((area) => {
       const offensesInArea = Object.keys(predictions[area]);
@@ -221,7 +226,7 @@ const CrimePrediction = () => {
           </div>
 
           {loadingPredictions ? (
-            <p>Loading predictions...</p>
+            <p>Generating Predictions...</p>
           ) : Object.keys(predictions).length > 0 ? (
             <div className="table-container">
               <table className="predictions-table">

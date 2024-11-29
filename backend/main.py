@@ -1,12 +1,8 @@
-import httpx
-import json
 from fastapi import FastAPI, Query, HTTPException
 from collections import Counter
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
-import os
 import mysql.connector
-import reports
 from typing import List
 from pydantic import BaseModel
 import pdfkit
@@ -14,7 +10,7 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnablePassthrough
@@ -24,23 +20,20 @@ from pydantic import BaseModel
 import mysql.connector
 from langchain_community.utilities import SQLDatabase
 from langchain_core.output_parsers import StrOutputParser
+
 from datetime import datetime, timedelta
-import plotly.graph_objs as go
 from scipy.stats import linregress
 from scipy.stats import linregress
 from datetime import timedelta
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from pandas.tseries.offsets import MonthBegin, Week
-
+import xgboost as xgb
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
 from geopy.geocoders import Nominatim
 from geopy.distance import geodesic
-from geopy.exc import GeocoderTimedOut
 from geopy.extra.rate_limiter import RateLimiter
-import networkx as nx
-import itertools
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -395,7 +388,7 @@ def get_crime_prediction_data():
                 DATE_SUB(CURDATE(), INTERVAL 2 YEAR), 
                 INTERVAL (7 - WEEKDAY(DATE_SUB(CURDATE(), INTERVAL 2 YEAR))) DAY
             )
-            AND YEARWEEK(report_date_time, 1) < YEARWEEK(CURDATE(), 1) - 1
+            AND YEARWEEK(report_date_time, 1) < YEARWEEK(CURDATE(), 1)
             GROUP BY offense, YEARWEEK(report_date_time, 1)
         """
         cursor.execute(query)
@@ -421,7 +414,7 @@ def get_crime_prediction_data():
         "theft/other": "red",
         "theft f/auto": "blue",
         "assault w/dangerous weapon": "orange",
-        "homicide": "yellow",
+        "homicide": "#FFCC00", # Dark Yellow
         "motor vehicle theft": "green",
         "burglary": "purple",
         "robbery": "pink",
@@ -478,14 +471,11 @@ def get_area_time_crime_prediction(area: str, timeframe: str):
     conn = establish_connection()
     if conn is None:
         return {"error": "Failed to connect to the database."}
-
     try:
         cursor = conn.cursor(dictionary=True)
 
-        # Allowed area options (voting_precinct removed)
-        valid_areas = ["ward", "neighborhood_clusters", "anc", "psa"]
-
         # Validate area input
+        valid_areas = ["ward", "neighborhood_clusters", "anc", "psa"]
         if area not in valid_areas:
             return {"error": f"Invalid area. Allowed values are: {', '.join(valid_areas)}"}
 
@@ -497,11 +487,10 @@ def get_area_time_crime_prediction(area: str, timeframe: str):
             "two years": "2 YEAR",
             "five years": "5 YEAR"
         }
-
         if timeframe not in timeframe_mapping:
             return {"error": "Invalid timeframe"}
 
-        # Build query based on area and timeframe
+        # Fetch data
         query = f"""
             SELECT offense, rt.report_date_time, rl.{area} AS area
             FROM report_time rt
@@ -517,80 +506,103 @@ def get_area_time_crime_prediction(area: str, timeframe: str):
             return {"error": "No data available for the selected criteria"}
 
         df = pd.DataFrame(data)
-
-        # Convert report_date_time to datetime
         df['report_date_time'] = pd.to_datetime(df['report_date_time'])
 
-        # Create time_period based on timeframe
-        if timeframe == 'week':
-            freq = 'W'
-        else:
-            freq = 'M'
-
+        # Feature Engineering
+        freq = 'W' if timeframe == 'week' else 'M'
         df['time_period'] = df['report_date_time'].dt.to_period(freq).apply(lambda r: r.start_time)
-
-        # Aggregate crime counts
         df_agg = df.groupby(['offense', 'area', 'time_period']).size().reset_index(name='crime_count')
 
-        # Feature engineering
-        df_agg['month'] = df_agg['time_period'].dt.month
-        df_agg['year'] = df_agg['time_period'].dt.year
+        # Add historical averages and lags
+        df_agg = df_agg.sort_values('time_period')
+        df_agg['lag_1'] = df_agg.groupby(['offense', 'area'])['crime_count'].shift(1).fillna(0)
+        df_agg['lag_2'] = df_agg.groupby(['offense', 'area'])['crime_count'].shift(2).fillna(0)
+        df_agg['lag_3'] = df_agg.groupby(['offense', 'area'])['crime_count'].shift(3).fillna(0)
 
-        # Prepare features and target
-        features = df_agg[['offense', 'area', 'month', 'year']]
-        features = pd.get_dummies(features, columns=['offense', 'area'], drop_first=False)
-        target = df_agg['crime_count']
+        # Prepare Features and Target
+        features = ['offense', 'area', 'lag_1', 'lag_2', 'lag_3']
+        X = pd.get_dummies(df_agg[features], columns=['offense', 'area'], drop_first=False)
+        y = df_agg['crime_count']
 
-        # Train-test split
-        X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
+        # Train/Test Split and Model Training
+        train_size = int(len(X) * 0.8)
+        X_train, X_test = X.iloc[:train_size], X.iloc[train_size:]
+        y_train, y_test = y.iloc[:train_size], y.iloc[train_size:]
 
-        # Train Random Forest
-        model = RandomForestRegressor(n_estimators=100, random_state=42)
-        model.fit(X_train, y_train)
+        pipeline = Pipeline([
+            ('scaler', StandardScaler()),
+            ('model', xgb.XGBRegressor(
+                n_estimators=500,
+                learning_rate=0.1,
+                max_depth=6,
+                subsample=0.8,
+                colsample_bytree=0.8,
+                random_state=42,
+                n_jobs=-1
+            ))
+        ])
+        pipeline.fit(X_train, y_train)
 
-        # Prepare future data for prediction
-        offenses = df_agg['offense'].unique()
-        areas = df_agg['area'].unique()
+        # Testing the accuracy of the model
+        test_model_accuracy(pipeline, X_test, y_test)
 
-        max_time_period = df_agg['time_period'].max()
-        # Determine the appropriate offset based on the frequency
-        if freq == 'W':
-            next_time_period = max_time_period + Week(1)
-        else:
-            next_time_period = max_time_period + MonthBegin(1)
+        # Predict Future Crimes
+        future_data = df_agg.copy()
+        future_data['predicted_crimes'] = pipeline.predict(X)
 
-        future_month = next_time_period.month
-        future_year = next_time_period.year
+        # Replace invalid float values
+        future_data['predicted_crimes'] = future_data['predicted_crimes'].apply(
+            lambda x: 0 if np.isnan(x) or np.isinf(x) else x
+        )
 
-        from itertools import product
+        # Pivot Table for Response
+        result = future_data.pivot_table(
+            index='area', columns='offense', values='predicted_crimes', aggfunc='sum'
+        )
 
-        future_data = pd.DataFrame(list(product(offenses, areas)), columns=['offense', 'area'])
-        future_data['month'] = future_month
-        future_data['year'] = future_year
+        # Replace invalid values in the final response
+        result = result.replace([np.inf, -np.inf], 0).fillna(0)
 
-        # One-hot encode future data
-        future_features = pd.get_dummies(future_data, columns=['offense', 'area'], drop_first=False)
-
-        # Ensure future_features has the same columns as training features
-        for col in features.columns:
-            if col not in future_features.columns:
-                future_features[col] = 0
-        future_features = future_features[features.columns]
-
-        # Predict future crimes
-        future_predictions = model.predict(future_features)
-        future_data['predicted_crimes'] = future_predictions
-
-        # Prepare response
-        result = future_data.pivot(index='area', columns='offense', values='predicted_crimes')
-        return {"data": result.to_dict(orient='index')}
+        # Convert to JSON-friendly format
+        return {"data": result.round(2).to_dict(orient='index')}
 
     except mysql.connector.Error as err:
         return {"error": str(err)}
+    except Exception as e:
+        return {"error": f"Unexpected error: {str(e)}"}
     finally:
         cursor.close()
         conn.close()
 
+
+def test_model_accuracy(pipeline, X_test, y_test):
+    """
+    Tests the accuracy of the trained model.
+    """
+    # Predict using the model
+    y_pred = pipeline.predict(X_test)
+    
+    # Replace invalid predictions with 0
+    y_pred = np.where(np.isnan(y_pred) | np.isinf(y_pred), 0, y_pred)
+
+    # Calculate metrics
+    mae = mean_absolute_error(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+    rmse = np.sqrt(mse)
+    r2 = r2_score(y_test, y_pred)
+    
+    # Print and return results
+    print(f"Mean Absolute Error (MAE): {mae:.2f}")
+    print(f"Mean Squared Error (MSE): {mse:.2f}")
+    print(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
+    print(f"R² Score: {r2:.2f}")
+    
+    return {
+        "MAE": mae,
+        "MSE": mse,
+        "RMSE": rmse,
+        "R2": r2
+    }
 
 class CrimeReport(BaseModel):
     ccn: str  # Ensure CCN is a string
