@@ -550,9 +550,9 @@ def get_area_time_crime_prediction(area: str, timeframe: str):
         future_data = df_agg.copy()
         future_data['predicted_crimes'] = pipeline.predict(X)
 
-        # Replace invalid float values
+        # Ensure no negative predictions
         future_data['predicted_crimes'] = future_data['predicted_crimes'].apply(
-            lambda x: 0 if np.isnan(x) or np.isinf(x) else x
+            lambda x: max(0, x) if not np.isnan(x) and not np.isinf(x) else 0
         )
 
         # Pivot Table for Response
