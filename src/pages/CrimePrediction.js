@@ -188,10 +188,10 @@ const CrimePrediction = () => {
 
       {activeTab === "advancedPredictions" && (
         <>
-          <h2>Predict Number of Crimes by Area and Time Frame</h2>
+          <h2>Predict Number of Crimes by Specified Region and Time Frame</h2>
           <div className="prediction-filters">
             <label>
-              Area:
+              Region Filter:
               <select
                 value={area}
                 onChange={(e) => setArea(e.target.value)}
@@ -232,7 +232,7 @@ const CrimePrediction = () => {
               <table className="predictions-table">
                 <thead>
                   <tr>
-                    <th>Area</th>
+                    <th>Region</th>
                     {offenses.map((offense) => (
                       <th key={offense}>{offense}</th>
                     ))}
