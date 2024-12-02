@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import TotalsComponent from "../components/TotalsComponent"; // Assuming you have a TotalsComponent
 import "../styles/Reports.css"; // Import your CSS styles
+import "./Reports.css";  // If you want to put styles in a separate file
 
 const Reports = () => {
   const [report, setReport] = useState(null);
@@ -141,7 +142,7 @@ const Reports = () => {
           color: "white",
         }}
       >
-        <h2>Crime Report Generator</h2>
+        <h2 style={{ color: 'white' }}>Crime Report Generator</h2>
 
         {/* Start Date Input */}
         <div>
