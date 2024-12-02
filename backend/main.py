@@ -213,6 +213,10 @@ def analyze_data():
         cursor.close()
         conn.close()
 
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
 
 @app.get("/api/test")
 async def test_endpoint():
