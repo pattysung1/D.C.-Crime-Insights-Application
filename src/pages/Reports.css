@@ -1,3 +1,13 @@
 h2 {
   color: white;
 } 
+
+input[type="date"] {
+  color: white;
+  background-color: #1B1B1B;
+  border: 1px solid gray;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+} 

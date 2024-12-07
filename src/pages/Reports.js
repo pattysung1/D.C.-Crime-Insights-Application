@@ -277,41 +277,36 @@ const Reports = () => {
                 </tr>
               </thead>
               <tbody>
-                {report.slice(0, 15).map(
-                  (
-                    row,
-                    index // Show top 6 results
-                  ) => (
-                    <tr key={index}>
-                      <td style={{ border: "1px solid gray", padding: "5px" }}>
-                        {row.ccn}
-                      </td>
-                      <td style={{ border: "1px solid gray", padding: "5px" }}>
-                        {row.REPORT_DAT}
-                      </td>
-                      <td style={{ border: "1px solid gray", padding: "5px" }}>
-                        {row.SHIFT}
-                      </td>
-                      <td style={{ border: "1px solid gray", padding: "5px" }}>
-                        {row.offense}
-                      </td>
-                      <td style={{ border: "1px solid gray", padding: "5px" }}>
-                        {row.method}
-                      </td>
-                      <td style={{ border: "1px solid gray", padding: "5px" }}>
-                        {row.ward}
-                      </td>
-                      <td style={{ border: "1px solid gray", padding: "5px" }}>
-                        {row.neighborhood_clusters}
-                      </td>
-                    </tr>
-                  )
-                )}
+                {report.map((row, index) => (
+                  <tr key={index}>
+                    <td style={{ border: "1px solid gray", padding: "5px" }}>
+                      {row.ccn}
+                    </td>
+                    <td style={{ border: "1px solid gray", padding: "5px" }}>
+                      {row.REPORT_DAT}
+                    </td>
+                    <td style={{ border: "1px solid gray", padding: "5px" }}>
+                      {row.SHIFT}
+                    </td>
+                    <td style={{ border: "1px solid gray", padding: "5px" }}>
+                      {row.offense}
+                    </td>
+                    <td style={{ border: "1px solid gray", padding: "5px" }}>
+                      {row.method}
+                    </td>
+                    <td style={{ border: "1px solid gray", padding: "5px" }}>
+                      {row.ward}
+                    </td>
+                    <td style={{ border: "1px solid gray", padding: "5px" }}>
+                      {row.neighborhood_clusters}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
 
             {/* Name Input */}
-            <div>
+            {/* <div>
               <label>Enter your name for the report:</label>
               <input
                 type="text"
@@ -326,9 +321,9 @@ const Reports = () => {
                   border: "1px solid gray",
                 }}
               />
-            </div>
+            </div> */}
 
-            <button
+            {/* <button
               onClick={() => {
                 console.log("Download button clicked!");
                 downloadReport();
@@ -342,7 +337,7 @@ const Reports = () => {
               }}
             >
               Generate and Download Crime Report
-            </button>
+            </button> */}
           </div>
         )}
 
