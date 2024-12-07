@@ -2,9 +2,9 @@
 
 # D.C Crime Insights Application
 
-## Project status
+## Before you Begin
 
-As of 12/11/2024 the team will no longer be working on the project. Additionally, the database will be shut down after the final project is graded because we are currently paying to use Amazon RDS resources by having it deployed on the internet. If you desire to fork the project, the crime_database.py file can be used to create tables in a new database by changing the credentials, using the various functions defined in the file, and by downloading the csv files from where we gathered our data from: https://crimecards.dc.gov/. However, changes the application must not be used for commercial use and must follow our creative license http://creativecommons.org/licenses/by-nc/4.0/.
+Users planning on running this application should have Node.js and Python installed, as well as the latest versions of the windows, mac, or linux operating systems.
 
 ## Description
 
@@ -12,18 +12,63 @@ The D.C. Crime Insights Application can be used to analyze valuable data regardi
 
 ### Features
 
-- Dashboard: Provides high livel information such as general statistics over the past 30 days, Past 12 months, and Crime Trends over the past few years using a variety of different graphs to diplay information in a clean and concise format.
+- Dashboard: Provides high level information such as general statistics over the past 30 days, Past 12 months, and Crime Trends over the past few years using a variety of different graphs to display information in a clean and concise format.
 - CrimeMap: This page can be used to display crimes across D.C. and can filter crimes by the crime type, crime zone, and date range over the past 30 days.
 - Reports: This page can take dates from a specified range, as well as a neighborhood cluster to generate a report of information regarding various data for the users on the webpage.
 - Crime Prediction: This page contains two sections. The Linear Regression Graph tab contains a linear regression graph that can be used to help predict the number of crimes that will occur for a specific method in D.C. over the coming weeks. The Advanced Predictions tab can be used to predict the number of crimes that will predict over a certain timeframe for a specified region. Both of these tools are very valuable for helping users predict future crimes trends.
 - Safe Routing: This page takes start and destination locations and generates a safe route for the user to take by leveraging past crime data.
-- Public Saftey Resources: The page provides various resouces users can look at to help report crimes or keep them safe.
+- Public Safety Resources: The page provides various resouces users can look at to help report crimes or keep them safe.
 - Settings: This page can be used to change the colors in the sidebar to help make the application look nicer.
 
 Features Not Specifically in the Application:
 
 - Live Database Hosted Using AWS: The database is currently hosted on Amazon RDS. All calls used to gather data in the application pull data from the tables hosted in the live database.
-- Database Autoscheduler: This uses Amazon Lambda and Amazon EventBridge to automatically scheule updates to the database to add new crimes. The code used is in the backend section of the database but does not work if you try to run the Python file since its just the code used in the Amazon Lambda file.
+- Database Autoscheduler: This uses Amazon Lambda and Amazon EventBridge to automatically schedule updates to the database to add new crimes. The code used is in the backend section of the database but does not work if you try to run the Python file since its just the code used in the Amazon Lambda file.
+
+## Usage:
+
+Usage section
+
+## Tech Stack
+
+### **Frontend**
+
+- **Framework:** React.js (JavaScript)
+- **UI Libraries:**
+  - Mantine (for components like Select and DatePicker)
+  - Leaflet & React-Leaflet (for interactive maps)
+  - Plotly.js (for graphs and data visualization)
+- **Styling:** CSS, Mantine custom themes
+
+### **Backend**
+
+- **Framework:** FastAPI (Python) - powers our API and backend services
+- **Server:** Uvicorn - runs the backend application
+- **Database:** MySQL (hosted on Amazon RDS)
+- **Data Processing Libraries:**
+  - Pandas, NumPy, SciPy (for data analysis)
+  - Scikit-learn, XGBoost (for crime prediction models)
+  - Geopy, Polyline (for location-based routing)
+  - Pydantic (for data validation)
+
+### **Cloud Services (AWS)**
+
+- **Amazon RDS:** Hosts our live database
+- **AWS Lambda:** Handles serverless computing tasks
+- **Amazon EventBridge:** Automates database updates on a scheduled basis
+
+### **Deployment & Version Control**
+
+- **Version Control:** Git (GitHub for code management)
+- **Deployment:** AWS EC2 (for hosting the application and backend services)
+- **Task Automation:** AWS Lambda & EventBridge for automatic data updates
+
+### Data Souce
+
+Data Gathered and used for this project can be found at the following links:
+
+- https://crimecards.dc.gov/
+- API JSON Link: https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/MPD/MapServer/8/query?where=1%3D1&outFields=CCN,REPORT_DAT,SHIFT,LATITUDE,LONGITUDE,WARD,NEIGHBORHOOD_CLUSTER,ANC,PSA,VOTING_PRECINCT,METHOD,OFFENSE&outSR=4326&f=json&orderByFields=REPORT_DAT%20DESC&resultRecordCount=1000
 
 ## Installation
 
@@ -61,6 +106,7 @@ To run the code there are many dependencies that need to be installed from the t
 2. In terminal 1:
 
    cd backend
+
    uvicorn main:app --reload
 
 3. In terminal 2:
@@ -71,17 +117,29 @@ To run the code there are many dependencies that need to be installed from the t
 
 Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
+## Project status
+
+As of 12/11/2024 the team will no longer be working on the project. Additionally, the database will be shut down after the final project is graded because we are currently paying to use Amazon RDS resources by having it deployed on the internet. If you desire to fork the project, you should change the credentials to connect to the a new database and use the various functions defined in the crime_database.py file to create and populate the tables by downloading the csv files from where we gathered our data from: https://crimecards.dc.gov/. However, changes the application must not be used for commercial use and must follow our creative license http://creativecommons.org/licenses/by-nc/4.0/.
+
 ## Support
 
-Project was developed by Capstone Group 10 - CS 5934. For more information about the project, you can contact our professor ssibdari@vt.edu as team members emails will be depricated in the near future.
+Project was developed by Capstone Group 10 - CS 5934. For more information about the project, you can contact our professor ssibdari@vt.edu as team members emails will be deprecated in the near future. Additionally, you can view the repository: https://code.vt.edu/sungpeihsuan/crime-report-web-application
 
 ## Roadmap
 
-Regarding future works for the application. We believe that it would be a good idea to use polynomial regression for different crime methods on the Crime Prediction Linear Regression Graph. Additionally, on the Saftery Routing Page, we generate a new route for the user that takes into account local crime data over the past 7 days. However, our application does not show the original route generated before taking into account the crime data. This may be a good feature to add to the application.
+Roadmap for future improvements to our application:
+
+- We believe that it would be a good idea to use polynomial regression for different crime methods on the Crime Prediction Linear Regression Graph.
+
+- Additionally, on the Saftery Routing Page, we generate a new route for the user that takes into account local crime data over the past 7 days. However, our application does not show the original route generated before taking into account the crime data. This may be a good feature to add to the application.
+
+Additionally linked is our groups Kanban board. Note that this may require a request to access. https://venkata-chaitanya-kanakamedala.atlassian.net/jira/software/projects/CRWA/boards/2
 
 ## Contributing
 
 Our team is open to contributions as long as they follow our license: http://creativecommons.org/licenses/by-nc/4.0/
+
+The following is a link to our github repository: https://code.vt.edu/sungpeihsuan/crime-report-web-application
 
 ## Authors and acknowledgment
 
@@ -97,9 +155,13 @@ The following project was guided under professor Soheil Sibdari
 
 ## License
 
-http://creativecommons.org/licenses/by-nc/4.0/
+The following is the creative license for our project: http://creativecommons.org/licenses/by-nc/4.0/
 
-# Getting Started with Create React App
+This is the full legal code for our license: https://creativecommons.org/licenses/by-nc/4.0/legalcode.en
+
+# More Information About Using React
+
+## Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
