@@ -187,7 +187,7 @@ def testing_database():
 
         # cursor.execute("SELECT * FROM report_time inner join report_location on report_location.CCN = report_time.CCN inner join offense_and_method on offense_and_method.CCN = report_time.CCN WHERE MONTH(report_time.report_date_time) = 10 AND YEAR(report_time.report_date_time) = YEAR(CURDATE());")
 
-        cursor.execute("SELECT DISTINCT anc FROM report_location WHERE anc IS NOT NULL;")
+        cursor.execute("SELECT * FROM report_time ORDER BY report_date_time DESC LIMIT 10;")
 
         print(cursor.fetchall())
 
