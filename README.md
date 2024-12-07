@@ -8,16 +8,64 @@ As of 12/11/2024 the team will no longer be working on the project. Additionally
 
 ## Description
 
-The D.C. Crime Insights Application can be used to analyze valuable data regarding D.C. crime statistics. The application has multiple different pages that serve different functions
+The D.C. Crime Insights Application can be used to analyze valuable data regarding D.C. crime statistics. The application has multiple different pages that serve different functions.
 
 ### Features
 
 - Dashboard: Provides high livel information such as general statistics over the past 30 days, Past 12 months, and Crime Trends over the past few years using a variety of different graphs to diplay information in a clean and concise format.
-- CrimeMap: This page
+- CrimeMap: This page can be used to display crimes across D.C. and can filter crimes by the crime type, crime zone, and date range over the past 30 days.
+- Reports: This page can take dates from a specified range, as well as a neighborhood cluster to generate a report of information regarding various data for the users on the webpage.
+- Crime Prediction: This page contains two sections. The Linear Regression Graph tab contains a linear regression graph that can be used to help predict the number of crimes that will occur for a specific method in D.C. over the coming weeks. The Advanced Predictions tab can be used to predict the number of crimes that will predict over a certain timeframe for a specified region. Both of these tools are very valuable for helping users predict future crimes trends.
+- Safe Routing: This page takes start and destination locations and generates a safe route for the user to take by leveraging past crime data.
+- Public Saftey Resources: The page provides various resouces users can look at to help report crimes or keep them safe.
+- Settings: This page can be used to change the colors in the sidebar to help make the application look nicer.
+
+Features Not Specifically in the Application:
+
+- Live Database Hosted Using AWS: The database is currently hosted on Amazon RDS. All calls used to gather data in the application pull data from the tables hosted in the live database.
+- Database Autoscheduler: This uses Amazon Lambda and Amazon EventBridge to automatically scheule updates to the database to add new crimes. The code used is in the backend section of the database but does not work if you try to run the Python file since its just the code used in the Amazon Lambda file.
 
 ## Installation
 
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+To run the code there are many dependencies that need to be installed from the terminal. Below are a list of these dependencies. Although we have tried to include all of them, there may be more that we have forgotton to include. If that is the case, your terminal should inform you which dependencies you need to install as you try launching the application.
+
+### NPM Installs
+
+- npm install leaflet react-leaflet
+- npm install leaflet
+- npm install react-datepicker
+- npm install date-fns
+- npm install @mantine/core @mantine/dates
+- npm install plotly.js-dist
+
+### PIP Installs
+
+- pip install fastapi
+- pip install uvicorn[standard]
+- pip install mysql-connector-python
+- pip install scikit-learn
+- pip install xgboost
+- pip install numpy
+- pip install pandas
+- pip install scipy
+- pip install geopy
+- pip install requests
+- pip install polyline
+- pip install pydantic
+- pip install langchain
+
+### Runing the application
+
+1. Open up two terminals
+
+2. In terminal 1:
+
+   cd backend
+   uvicorn main:app --reload
+
+3. In terminal 2:
+
+   npm start
 
 ## Usage
 
