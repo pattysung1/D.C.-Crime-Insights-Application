@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from "react-
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Custom icons for start and end points
+// Custom icon for markers
 const greenIcon = new L.Icon({
   iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png",
   iconSize: [25, 41],
@@ -13,16 +13,14 @@ const greenIcon = new L.Icon({
 });
 
 const SafeRoutingComponent = ({ safeRoute = [], regularRoute = [] }) => {
-  // Component to adjust the map bounds based on the routes
   const MapBounds = () => {
     const map = useMap();
 
     useEffect(() => {
-      // If there are routes, fit the map to their bounds
-      if (safeRoute.length > 0 || regularRoute.length > 0) {
+      if ((Array.isArray(safeRoute) && safeRoute.length > 0) || (Array.isArray(regularRoute) && regularRoute.length > 0)) {
         const bounds = L.latLngBounds([
-          ...safeRoute.map((point) => [point.lat, point.lng]),
-          ...regularRoute.map((point) => [point.lat, point.lng]),
+          ...(safeRoute || []).map((point) => [point.lat, point.lng]),
+          ...(regularRoute || []).map((point) => [point.lat, point.lng]),
         ]);
         map.fitBounds(bounds);
       }
@@ -31,63 +29,72 @@ const SafeRoutingComponent = ({ safeRoute = [], regularRoute = [] }) => {
     return null;
   };
 
-  // Default map center and zoom level (Washington, DC)
   const defaultCenter = [38.8977, -77.0365];
   const defaultZoom = 13;
 
-  // Extract the start and end points from the safe route
-  const startPoint = safeRoute.length > 0 ? safeRoute[0] : null;
-  const endPoint = safeRoute.length > 0 ? safeRoute[safeRoute.length - 1] : null;
+  // Determine start and end points
+  const startPoint = Array.isArray(safeRoute) && safeRoute.length > 0 ? safeRoute[0] : null;
+  const endPoint = Array.isArray(safeRoute) && safeRoute.length > 0 ? safeRoute[safeRoute.length - 1] : null;
 
   return (
     <MapContainer center={defaultCenter} zoom={defaultZoom} style={{ height: "600px", width: "100%" }}>
       <TileLayer
-        // Use OpenStreetMap tiles for the map
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
 
-      {/* Adjust map bounds based on the routes */}
       <MapBounds />
 
-      {/* Marker for the starting point */}
+      {/* Marker for Start Point */}
       {startPoint && (
         <Marker position={[startPoint.lat, startPoint.lng]} icon={greenIcon}>
-          <Popup>Start</Popup>
+          <Popup>
+            <b>Start</b>
+            <br />
+            Latitude: {startPoint.lat}
+            <br />
+            Longitude: {startPoint.lng}
+          </Popup>
         </Marker>
       )}
 
-      {/* Marker for the destination point */}
+      {/* Marker for End Point */}
       {endPoint && (
         <Marker position={[endPoint.lat, endPoint.lng]} icon={greenIcon}>
-          <Popup>Destination</Popup>
+          <Popup>
+            <b>Destination</b>
+            <br />
+            Latitude: {endPoint.lat}
+            <br />
+            Longitude: {endPoint.lng}
+          </Popup>
         </Marker>
       )}
 
-      {/* Polyline for the safe route */}
-      {safeRoute.length > 0 && (
+      {/* Polyline for the Safe Route */}
+      {Array.isArray(safeRoute) && safeRoute.length > 0 && (
         <Polyline
           positions={safeRoute.map((point) => [point.lat, point.lng])}
-          color="green" // Green for the safe route
-          weight={5} // Line thickness
-          dashArray="10, 5" // Dashed pattern for distinction
+          color="green"
+          weight={5}
+          dashArray="10, 5"
         />
       )}
 
-      {/* Polyline for the regular route */}
-      {/* {regularRoute.length > 0 && (
+      {/* Polyline for the Regular Route */}
+      {/* {Array.isArray(regularRoute) && regularRoute.length > 0 && (
         <Polyline
           positions={regularRoute.map((point) => [point.lat, point.lng])}
-          color="red" // Red for the regular route
-          weight={4} // Line thickness
-          opacity={0.7} // Semi-transparent for visibility
+          color="red"
+          weight={4}
+          opacity={0.7}
         />
       )} */}
 
-      {/* Default map message */}
-      {!safeRoute.length && !regularRoute.length && (
+      {/* Default Message */}
+      {!Array.isArray(safeRoute) && !Array.isArray(regularRoute) && (
         <div className="default-map-message">
-          <p style={{ textAlign: "center", marginTop: "20px" }}>
+          <p style={{ textAlign: "center", marginTop: "20px", color: "gray" }}>
             Enter a start and destination to find routes.
           </p>
         </div>
