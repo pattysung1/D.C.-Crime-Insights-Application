@@ -1,3 +1,5 @@
+import polyline
+import requests
 from fastapi import FastAPI, Query, HTTPException
 from collections import Counter
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +11,8 @@ import pdfkit
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
+from dotenv import load_dotenv
+import os
 
 from fastapi import FastAPI
 from langchain_core.messages import AIMessage, HumanMessage
@@ -213,6 +217,7 @@ def analyze_data():
         cursor.close()
         conn.close()
 
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -413,12 +418,12 @@ def get_crime_prediction_data():
     # Convert 'week' to actual dates for x-axis
     df['week_start_date'] = df['week'].apply(
         lambda yw: datetime.strptime(f"{yw}1", "%Y%W%w"))
-    
+
     colors = {
         "theft/other": "red",
         "theft f/auto": "blue",
         "assault w/dangerous weapon": "orange",
-        "homicide": "#FFCC00", # Dark Yellow
+        "homicide": "#FFCC00",  # Dark Yellow
         "motor vehicle theft": "green",
         "burglary": "purple",
         "robbery": "pink",
@@ -435,7 +440,8 @@ def get_crime_prediction_data():
             offense_data['week_start_date'].map(datetime.toordinal),
             offense_data['total_crimes']
         )
-        regression_line = slope * offense_data['week_start_date'].map(datetime.toordinal) + intercept
+        regression_line = slope * \
+            offense_data['week_start_date'].map(datetime.toordinal) + intercept
 
         # Predict future crimes for the next 12 weeks
         future_weeks = pd.date_range(
@@ -443,7 +449,8 @@ def get_crime_prediction_data():
             periods=12,
             freq='W-MON'
         )
-        future_crimes = slope * future_weeks.map(datetime.toordinal) + intercept
+        future_crimes = slope * \
+            future_weeks.map(datetime.toordinal) + intercept
 
         # Use the same color for prediction line as the associated offense
         offense_color = colors.get(offense, "black")
@@ -514,18 +521,24 @@ def get_area_time_crime_prediction(area: str, timeframe: str):
 
         # Feature Engineering
         freq = 'W' if timeframe == 'week' else 'M'
-        df['time_period'] = df['report_date_time'].dt.to_period(freq).apply(lambda r: r.start_time)
-        df_agg = df.groupby(['offense', 'area', 'time_period']).size().reset_index(name='crime_count')
+        df['time_period'] = df['report_date_time'].dt.to_period(
+            freq).apply(lambda r: r.start_time)
+        df_agg = df.groupby(['offense', 'area', 'time_period']
+                            ).size().reset_index(name='crime_count')
 
         # Add historical averages and lags
         df_agg = df_agg.sort_values('time_period')
-        df_agg['lag_1'] = df_agg.groupby(['offense', 'area'])['crime_count'].shift(1).fillna(0)
-        df_agg['lag_2'] = df_agg.groupby(['offense', 'area'])['crime_count'].shift(2).fillna(0)
-        df_agg['lag_3'] = df_agg.groupby(['offense', 'area'])['crime_count'].shift(3).fillna(0)
+        df_agg['lag_1'] = df_agg.groupby(['offense', 'area'])[
+            'crime_count'].shift(1).fillna(0)
+        df_agg['lag_2'] = df_agg.groupby(['offense', 'area'])[
+            'crime_count'].shift(2).fillna(0)
+        df_agg['lag_3'] = df_agg.groupby(['offense', 'area'])[
+            'crime_count'].shift(3).fillna(0)
 
         # Prepare Features and Target
         features = ['offense', 'area', 'lag_1', 'lag_2', 'lag_3']
-        X = pd.get_dummies(df_agg[features], columns=['offense', 'area'], drop_first=False)
+        X = pd.get_dummies(df_agg[features], columns=[
+                           'offense', 'area'], drop_first=False)
         y = df_agg['crime_count']
 
         # Train/Test Split and Model Training
@@ -585,7 +598,7 @@ def test_model_accuracy(pipeline, X_test, y_test):
     """
     # Predict using the model
     y_pred = pipeline.predict(X_test)
-    
+
     # Replace invalid predictions with 0
     y_pred = np.where(np.isnan(y_pred) | np.isinf(y_pred), 0, y_pred)
 
@@ -594,19 +607,20 @@ def test_model_accuracy(pipeline, X_test, y_test):
     mse = mean_squared_error(y_test, y_pred)
     rmse = np.sqrt(mse)
     r2 = r2_score(y_test, y_pred)
-    
+
     # Print and return results
     print(f"Mean Absolute Error (MAE): {mae:.2f}")
     print(f"Mean Squared Error (MSE): {mse:.2f}")
     print(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
     print(f"R² Score: {r2:.2f}")
-    
+
     return {
         "MAE": mae,
         "MSE": mse,
         "RMSE": rmse,
         "R2": r2
     }
+
 
 class CrimeReport(BaseModel):
     ccn: str  # Ensure CCN is a string
@@ -897,7 +911,7 @@ class ChatRequest(BaseModel):
     message: str
 
 
-OPENAI_API_KEY = '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'
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Initialize database connection
 
@@ -1055,8 +1069,6 @@ def get_monthly_crime_data():
 
 
 # Initialize the geolocator with a user agent and rate limiter
-import requests
-import polyline
 
 geolocator = Nominatim(user_agent="safe_routing_app")
 geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
@@ -1194,21 +1206,27 @@ def calculate_safe_route(start: str, destination: str):
     try:
         # Step 1: Geolocate start and destination
         start_location = geolocator.geocode(f"{start}, Washington, DC, USA")
-        destination_location = geolocator.geocode(f"{destination}, Washington, DC, USA")
+        destination_location = geolocator.geocode(
+            f"{destination}, Washington, DC, USA")
 
         if not start_location or not destination_location:
-            raise HTTPException(status_code=400, detail="Invalid start or destination address.")
+            raise HTTPException(
+                status_code=400, detail="Invalid start or destination address.")
 
         start_coords = (start_location.latitude, start_location.longitude)
-        destination_coords = (destination_location.latitude, destination_location.longitude)
+        destination_coords = (destination_location.latitude,
+                              destination_location.longitude)
 
-        logging.debug(f"Start address: {start_location.address} -> Coordinates: {start_coords}")
-        logging.debug(f"Destination address: {destination_location.address} -> Coordinates: {destination_coords}")
+        logging.debug(
+            f"Start address: {start_location.address} -> Coordinates: {start_coords}")
+        logging.debug(
+            f"Destination address: {destination_location.address} -> Coordinates: {destination_coords}")
 
         # Step 2: Fetch recent crimes from the database
         conn = establish_connection()
         if conn is None:
-            raise HTTPException(status_code=500, detail="Database connection failed.")
+            raise HTTPException(
+                status_code=500, detail="Database connection failed.")
 
         cursor = conn.cursor(dictionary=True)
         query = """
@@ -1235,7 +1253,8 @@ def calculate_safe_route(start: str, destination: str):
             }
             for crime in recent_crimes
         ]
-        logging.debug(f"Number of dangerous areas fetched: {len(dangerous_areas)}")
+        logging.debug(
+            f"Number of dangerous areas fetched: {len(dangerous_areas)}")
 
         # Step 4: Cluster dangerous areas using DBSCAN
         def cluster_dangerous_points(dangerous_areas, eps=0.007, min_samples=2, max_clusters=20):
@@ -1244,7 +1263,8 @@ def calculate_safe_route(start: str, destination: str):
             eps: Maximum distance in degrees (~700 meters is ~0.007 degrees).
             min_samples: Minimum number of points to form a cluster.
             """
-            coords = np.array([[area["lat"], area["lng"]] for area in dangerous_areas])
+            coords = np.array([[area["lat"], area["lng"]]
+                              for area in dangerous_areas])
             db = DBSCAN(eps=eps, min_samples=min_samples).fit(coords)
 
             clusters = {}
@@ -1270,12 +1290,14 @@ def calculate_safe_route(start: str, destination: str):
             return centroids
 
         reduced_danger_areas = cluster_dangerous_points(dangerous_areas)
-        logging.debug(f"Reduced number of dangerous areas to: {len(reduced_danger_areas)}")
+        logging.debug(
+            f"Reduced number of dangerous areas to: {len(reduced_danger_areas)}")
 
         # Step 5: Check if Google Maps route intersects with dangerous areas
         def is_near_danger(lat, lng, danger_areas, radius=500):
             for danger in danger_areas:
-                distance = geodesic((lat, lng), (danger["lat"], danger["lng"])).meters
+                distance = geodesic(
+                    (lat, lng), (danger["lat"], danger["lng"])).meters
                 if distance <= radius:
                     return True
             return False
@@ -1290,38 +1312,48 @@ def calculate_safe_route(start: str, destination: str):
         }
         response = requests.get(url, params=params)
         if response.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
+            raise HTTPException(
+                status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
 
         data = response.json()
         if data["status"] != "OK":
-            raise HTTPException(status_code=500, detail=f"Google API error: {data['status']}")
+            raise HTTPException(
+                status_code=500, detail=f"Google API error: {data['status']}")
 
         # Decode the initial route polyline
-        route_points = polyline.decode(data["routes"][0]["overview_polyline"]["points"])
+        route_points = polyline.decode(
+            data["routes"][0]["overview_polyline"]["points"])
         initial_route = [{"lat": lat, "lng": lng} for lat, lng in route_points]
 
         # Step 7: Modify the route if it intersects with dangerous areas
         waypoints = []
         for point in initial_route:
             if is_near_danger(point["lat"], point["lng"], reduced_danger_areas):
-                logging.debug(f"Dangerous point detected near {point}. Adding waypoint.")
+                logging.debug(
+                    f"Dangerous point detected near {point}. Adding waypoint.")
                 waypoints.append(point)
 
         if waypoints:
             # Recalculate the route using waypoints to avoid dangerous areas
-            waypoint_str = "|".join([f"{wp['lat']},{wp['lng']}" for wp in waypoints[:20]])  # Limit to 20 waypoints
+            # Limit to 20 waypoints
+            waypoint_str = "|".join(
+                [f"{wp['lat']},{wp['lng']}" for wp in waypoints[:20]])
             params["waypoints"] = waypoint_str
             response = requests.get(url, params=params)
             if response.status_code != 200:
-                raise HTTPException(status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
+                raise HTTPException(
+                    status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
 
             data = response.json()
             if data["status"] != "OK":
-                raise HTTPException(status_code=500, detail=f"Google API error: {data['status']}")
+                raise HTTPException(
+                    status_code=500, detail=f"Google API error: {data['status']}")
 
             # Decode the updated route polyline
-            route_points = polyline.decode(data["routes"][0]["overview_polyline"]["points"])
-            final_route = [{"lat": lat, "lng": lng} for lat, lng in route_points]
+            route_points = polyline.decode(
+                data["routes"][0]["overview_polyline"]["points"])
+            final_route = [{"lat": lat, "lng": lng}
+                           for lat, lng in route_points]
         else:
             final_route = initial_route
 
@@ -1405,13 +1437,16 @@ def calculate_regular_route(start: str, destination: str):
     try:
         # Step 1: Geolocate start and destination
         start_location = geolocator.geocode(f"{start}, Washington, DC, USA")
-        destination_location = geolocator.geocode(f"{destination}, Washington, DC, USA")
+        destination_location = geolocator.geocode(
+            f"{destination}, Washington, DC, USA")
 
         if not start_location or not destination_location:
-            raise HTTPException(status_code=400, detail="Invalid start or destination address.")
+            raise HTTPException(
+                status_code=400, detail="Invalid start or destination address.")
 
         start_coords = (start_location.latitude, start_location.longitude)
-        destination_coords = (destination_location.latitude, destination_location.longitude)
+        destination_coords = (destination_location.latitude,
+                              destination_location.longitude)
 
         # Step 2: Call Google Maps Directions API
         url = "https://maps.googleapis.com/maps/api/directions/json"
@@ -1423,18 +1458,21 @@ def calculate_regular_route(start: str, destination: str):
         }
         response = requests.get(url, params=params)
         if response.status_code != 200:
-            raise HTTPException(status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
+            raise HTTPException(
+                status_code=500, detail=f"HTTP error: {response.status_code}, {response.text}")
 
         data = response.json()
         if data["status"] != "OK":
-            raise HTTPException(status_code=500, detail=f"Google API error: {data['status']}")
+            raise HTTPException(
+                status_code=500, detail=f"Google API error: {data['status']}")
 
         # Step 3: Decode the route polyline
         if len(data["routes"]) < 1:
             raise HTTPException(status_code=404, detail="No route found.")
 
         first_route = data["routes"][0]
-        route_points = polyline.decode(first_route["overview_polyline"]["points"])
+        route_points = polyline.decode(
+            first_route["overview_polyline"]["points"])
         route = [{"lat": lat, "lng": lng} for lat, lng in route_points]
 
         return {"route": route, "color": "#FF0000"}  # Include red color
@@ -1442,7 +1480,6 @@ def calculate_regular_route(start: str, destination: str):
     except Exception as e:
         logging.error(f"Unexpected error in calculate_regular_route: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 
 # @app.get("/api/routes")
